@@ -267,11 +267,7 @@ export function buildGraph(input: AgentEvent[]): Graph {
     if (p) edges.push({ from: p.id, to: t.id, kind: 'seq' });
   }
 
-  // 计划条目之间的弱顺序（可视层次更清晰）
-  for (let i = 0; i + 1 < planItems.length; i++) {
-    if (!byId.has(planItems[i + 1]!.node.id)) continue;
-    edges.push({ from: planItems[i]!.node.id, to: planItems[i + 1]!.node.id, kind: 'seq' });
-  }
-
+  // 计划条目之间不加链边：图上由分组位置表达顺序，连线只留给步骤间的真实依赖
+  void byId;
   return { sessionId, nodes, edges };
 }

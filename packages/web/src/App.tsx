@@ -277,6 +277,7 @@ export default function App() {
                   key={`${state.currentSessionId ?? 'none'}-${theme}`}
                   graph={displayGraph}
                   sessionKey={state.currentSessionId ?? 'none'}
+                  selectedNodeId={selectedNodeId}
                   onSelectNode={setSelectedNodeId}
                 />
               )}

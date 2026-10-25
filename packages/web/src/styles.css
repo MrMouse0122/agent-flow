@@ -667,6 +667,22 @@ body {
   gap: 8px;
 }
 
+.af-node-why {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+/* AI 说明节点：与工具节点同构，弱化边框 */
+
+.af-note {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 9px 12px;
+  border-style: dashed;
+}
+
 .af-status-dot {
   flex: none;
   width: 9px;
@@ -719,6 +735,13 @@ body {
   padding: 0 11px;
   cursor: grab;
   border-bottom: 1px dashed var(--line);
+}
+
+.af-plan-meta {
+  margin-left: auto;
+  flex: none;
+  font-size: 11px;
+  color: var(--text-faint);
 }
 
 .af-plan-title {

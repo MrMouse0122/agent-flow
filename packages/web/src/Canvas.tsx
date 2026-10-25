@@ -1,7 +1,8 @@
 /**
  * 中间画布：Graph → React Flow。
  * - elkjs 布局在 layout.ts 中完成，graph 更新防抖 120ms 重算；
- * - 新节点入场动画（data.fresh + CSS transition）；
+ * - 节点卡片带一行「原因」说明；计划分组标题带 第N步/动作数；
+ * - 悬停或选中某节点时，聚焦它及其连线（其余节点与边淡出），看清步骤间的联系；
  * - 点击节点开详情，点击画布空白处关闭。
  */
 import {
@@ -16,19 +17,27 @@ import {
   useReactFlow,
 } from '@xyflow/react';
 import type { Edge, NodeProps, NodeTypes } from '@xyflow/react';
-import { useEffect, useRef } from 'react';
-import type { Graph } from '@agent-flow/protocol';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { Graph, StepNode } from '@agent-flow/protocol';
 import { computeLayout, cssVar, type FlowNode } from './layout';
 
 interface CanvasProps {
   graph: Graph | null;
   /** 会话标识变化时重置节点集合并自动 FitView */
   sessionKey: string;
+  /** 当前选中的节点（详情面板打开时保持聚焦高亮） */
+  selectedNodeId?: string | null;
   onSelectNode: (nodeId: string | null) => void;
 }
 
 function statusClass(step: { status: string }): string {
   return `af-st-${step.status}`;
+}
+
+/** 卡片上的一行原因（优先 agent 原话，其次计划条目） */
+function whyText(step: StepNode): string | undefined {
+  const pick = step.why.find((w) => w.source === 'tool-input' && w.text) ?? step.why[0];
+  return pick?.text;
 }
 
 function PromptNode({ data, selected }: NodeProps<FlowNode>) {
@@ -48,15 +57,18 @@ function PromptNode({ data, selected }: NodeProps<FlowNode>) {
 }
 
 function PlanNode({ data, selected }: NodeProps<FlowNode>) {
-  const { step, fresh } = data;
+  const { step, fresh, planIndex, actionCount } = data;
   return (
     <div className={`af-node af-plan ${fresh ? 'af-fresh' : ''} ${selected ? 'af-selected' : ''}`}>
       <Handle type="target" position={Position.Top} className="af-handle" />
       <div className="af-plan-header">
-        <span className="af-badge af-badge-plan">计划</span>
+        <span className="af-badge af-badge-plan">{typeof planIndex === 'number' ? `第 ${planIndex + 1} 步` : '计划'}</span>
         <span className="af-plan-title" title={step.label}>
           {step.label}
         </span>
+        {typeof actionCount === 'number' && (
+          <span className="af-plan-meta">{actionCount} 个动作</span>
+        )}
       </div>
       <Handle type="source" position={Position.Bottom} className="af-handle" />
     </div>
@@ -65,6 +77,7 @@ function PlanNode({ data, selected }: NodeProps<FlowNode>) {
 
 function ToolNode({ data, selected }: NodeProps<FlowNode>) {
   const { step, fresh } = data;
+  const why = whyText(step);
   return (
     <div
       className={`af-node af-tool ${statusClass(step)} ${fresh ? 'af-fresh' : ''} ${selected ? 'af-selected' : ''}`}
@@ -79,6 +92,33 @@ function ToolNode({ data, selected }: NodeProps<FlowNode>) {
       <div className="af-node-label af-ellipsis" title={step.label}>
         {step.label}
       </div>
+      {why && (
+        <div className="af-node-why af-ellipsis" title={why}>
+          ↳ {why}
+        </div>
+      )}
+      <Handle type="source" position={Position.Bottom} className="af-handle" />
+    </div>
+  );
+}
+
+function NoteNode({ data, selected }: NodeProps<FlowNode>) {
+  const { step, fresh } = data;
+  const why = whyText(step);
+  return (
+    <div className={`af-node af-note ${fresh ? 'af-fresh' : ''} ${selected ? 'af-selected' : ''}`}>
+      <Handle type="target" position={Position.Top} className="af-handle" />
+      <div className="af-tool-top">
+        <span className="af-badge af-kind-note">AI 说明</span>
+      </div>
+      <div className="af-node-label af-ellipsis" title={step.label}>
+        {step.label}
+      </div>
+      {why && (
+        <div className="af-node-why af-ellipsis" title={why}>
+          ↳ {why}
+        </div>
+      )}
       <Handle type="source" position={Position.Bottom} className="af-handle" />
     </div>
   );
@@ -104,14 +144,16 @@ const nodeTypes: NodeTypes = {
   'af-prompt': PromptNode,
   'af-plan': PlanNode,
   'af-tool': ToolNode,
+  'af-note': NoteNode,
   'af-turnend': TurnEndNode,
 };
 
 const FIT_OPTIONS = { padding: 0.12, maxZoom: 1.15, duration: 400 };
 
-function CanvasInner({ graph, sessionKey, onSelectNode }: CanvasProps) {
+function CanvasInner({ graph, sessionKey, selectedNodeId, onSelectNode }: CanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [hoverId, setHoverId] = useState<string | null>(null);
   const prevIdsRef = useRef<ReadonlySet<string>>(new Set());
   const layoutSeqRef = useRef(0);
   const fittedSessionRef = useRef<string | null>(null);
@@ -156,14 +198,45 @@ function CanvasInner({ graph, sessionKey, onSelectNode }: CanvasProps) {
     return () => clearTimeout(timer);
   }, [graph, sessionKey, setNodes, setEdges, fitView]);
 
+  // 聚焦：悬停优先，其次选中（详情面板打开时）。聚焦点及其邻边保持醒目，其余淡出。
+  const focusId = hoverId ?? selectedNodeId ?? null;
+  const displayEdges = useMemo(() => {
+    if (!focusId) return edges;
+    return edges.map((e) => {
+      const on = e.source === focusId || e.target === focusId;
+      const opacity = on ? 1 : 0.08;
+      return {
+        ...e,
+        style: { ...e.style, opacity },
+        labelStyle: e.labelStyle ? { ...e.labelStyle, opacity } : undefined,
+        animated: on,
+      };
+    });
+  }, [edges, focusId]);
+
+  const displayNodes = useMemo(() => {
+    if (!focusId) return nodes;
+    const related = new Set<string>([focusId]);
+    for (const e of edges) {
+      if (e.source === focusId) related.add(e.target);
+      if (e.target === focusId) related.add(e.source);
+    }
+    return nodes.map((n) => ({
+      ...n,
+      style: { ...n.style, opacity: related.has(n.id) ? 1 : 0.35 },
+    }));
+  }, [nodes, edges, focusId]);
+
   return (
     <ReactFlow
-      nodes={nodes}
-      edges={edges}
+      nodes={displayNodes}
+      edges={displayEdges}
       nodeTypes={nodeTypes}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onNodeClick={(_, node) => onSelectNode(node.id)}
+      onNodeMouseEnter={(_, node) => setHoverId(node.id)}
+      onNodeMouseLeave={() => setHoverId(null)}
       onPaneClick={() => onSelectNode(null)}
       fitView
       fitViewOptions={FIT_OPTIONS}

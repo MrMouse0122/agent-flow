@@ -12,7 +12,13 @@ import type { EdgeKind, Graph, StepNode } from '@agent-flow/protocol';
 import ELK from 'elkjs/lib/elk.bundled.js';
 import type { ElkNode } from 'elkjs/lib/elk-api';
 
-export type FlowNodeData = { step: StepNode; fresh: boolean };
+export type FlowNodeData = {
+  step: StepNode;
+  fresh: boolean;
+  /** plan-item 专用：第几步 / 名下动作数 */
+  planIndex?: number;
+  actionCount?: number;
+};
 export type FlowNode = Node<FlowNodeData>;
 
 export interface LayoutResult {
@@ -34,6 +40,8 @@ export function nodeTypeOf(step: StepNode): string {
       return 'af-plan';
     case 'turn-end':
       return 'af-turnend';
+    case 'note':
+      return 'af-note';
     default:
       return 'af-tool';
   }
@@ -56,10 +64,11 @@ function measure(step: StepNode): { width: number; height: number } {
       // 空分组的最小尺寸；有子节点时 elk 会按内容撑开
       return { width: 260, height: GROUP_HEADER + 2 * GROUP_PADDING + 40 };
     default: {
+      // 卡片带一行"原因"说明，比纯标题高
       const label = estimateTextWidth(step.label);
       const tool = estimateTextWidth(step.tool ?? '');
-      const width = Math.min(380, Math.max(230, Math.ceil(Math.max(label + 42, tool + 62))));
-      return { width, height: 64 };
+      const width = Math.min(400, Math.max(250, Math.ceil(Math.max(label + 42, tool + 62))));
+      return { width, height: 88 };
     }
   }
 }
@@ -75,7 +84,8 @@ export function cssVar(name: string, fallback: string): string {
 const EDGE_PRIORITY: Record<EdgeKind, number> = { verify: 4, 'read-edit': 3, contains: 2, seq: 1 };
 
 function toFlowEdge(from: string, to: string, kind: EdgeKind): Edge {
-  const base = { id: `e-${from}-${to}`, source: from, target: to };
+  // 统一用圆角折线：分层图里比贝塞尔曲线干净得多
+  const base = { id: `e-${from}-${to}`, source: from, target: to, type: 'smoothstep' as const, pathOptions: { borderRadius: 18 } };
   const strong = cssVar('--edge-strong', '#b3b3bd');
   const mid = cssVar('--edge-mid', '#8f8f9a');
   const labelBg = cssVar('--bg0', '#0a0a0a');
@@ -230,11 +240,12 @@ export async function computeLayout(graph: Graph, prevIds: ReadonlySet<string>):
     w: number,
     h: number,
     parentId?: string,
+    extra?: Partial<FlowNodeData>,
   ): FlowNode => ({
     id: step.id,
     type: nodeTypeOf(step),
     position: { x, y },
-    data: { step, fresh: !prevIds.has(step.id) },
+    data: { step, fresh: !prevIds.has(step.id), ...extra },
     ...(parentId ? { parentId, extent: 'parent' as const } : {}),
     ...(step.kind === 'plan-item' ? { dragHandle: '.af-plan-header' } : {}),
     width: w,
@@ -242,13 +253,26 @@ export async function computeLayout(graph: Graph, prevIds: ReadonlySet<string>):
     style: { width: w, height: h },
   });
 
+  // plan-item 的展示元数据：第几步 / 名下动作数
+  const planOrder = new Map(
+    graph.nodes
+      .filter((n) => n.kind === 'plan-item')
+      .sort((a, b) => a.ts - b.ts)
+      .map((n, i) => [n.id, i] as const),
+  );
+
   const groups: FlowNode[] = [];
   const leaves: FlowNode[] = [];
   for (const top of out.children) {
     const step = nodesById.get(top.id);
     if (!step) continue;
     if (step.kind === 'plan-item') {
-      groups.push(makeNode(step, top.x ?? 0, top.y ?? 0, top.width ?? 220, top.height ?? 100));
+      groups.push(
+        makeNode(step, top.x ?? 0, top.y ?? 0, top.width ?? 220, top.height ?? 100, undefined, {
+          planIndex: planOrder.get(step.id),
+          actionCount: (childrenOf.get(step.id) ?? []).length,
+        }),
+      );
       for (const child of top.children ?? []) {
         const childStep = nodesById.get(child.id);
         if (childStep) {
