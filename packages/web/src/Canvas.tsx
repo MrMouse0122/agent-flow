@@ -171,7 +171,7 @@ function CanvasInner({ graph, sessionKey, onSelectNode }: CanvasProps) {
       maxZoom={2.2}
       className="af-flow"
     >
-      <Background gap={24} size={1.1} color="#232937" />
+      <Background gap={24} size={1.1} color="#1d1d20" />
       <Controls showInteractive={false} />
     </ReactFlow>
   );

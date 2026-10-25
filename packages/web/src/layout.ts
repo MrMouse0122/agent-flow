@@ -74,34 +74,34 @@ function toFlowEdge(from: string, to: string, kind: EdgeKind): Edge {
       return {
         ...base,
         label: '读→改',
-        style: { stroke: '#6f9eff', strokeWidth: 2.4 },
-        labelStyle: { fill: '#6f9eff', fontSize: 11, fontWeight: 600 },
-        labelBgStyle: { fill: '#11141c', fillOpacity: 0.92 },
+        style: { stroke: '#b3b3bd', strokeWidth: 2.4 },
+        labelStyle: { fill: '#b3b3bd', fontSize: 11, fontWeight: 600 },
+        labelBgStyle: { fill: '#0a0a0a', fillOpacity: 0.92 },
         labelBgPadding: [5, 3],
         labelBgBorderRadius: 3,
-        markerEnd: { type: MarkerType.ArrowClosed, width: 15, height: 15, color: '#6f9eff' },
+        markerEnd: { type: MarkerType.ArrowClosed, width: 15, height: 15, color: '#b3b3bd' },
       };
     case 'verify':
       return {
         ...base,
         label: '验证',
-        style: { stroke: '#5fe0d0', strokeWidth: 2.4, strokeDasharray: '8 5' },
-        labelStyle: { fill: '#5fe0d0', fontSize: 11, fontWeight: 600 },
-        labelBgStyle: { fill: '#11141c', fillOpacity: 0.92 },
+        style: { stroke: '#8f8f9a', strokeWidth: 2.4, strokeDasharray: '8 5' },
+        labelStyle: { fill: '#8f8f9a', fontSize: 11, fontWeight: 600 },
+        labelBgStyle: { fill: '#0a0a0a', fillOpacity: 0.92 },
         labelBgPadding: [5, 3],
         labelBgBorderRadius: 3,
-        markerEnd: { type: MarkerType.ArrowClosed, width: 15, height: 15, color: '#5fe0d0' },
+        markerEnd: { type: MarkerType.ArrowClosed, width: 15, height: 15, color: '#8f8f9a' },
       };
     case 'seq':
       return {
         ...base,
-        style: { stroke: '#5b6683', strokeWidth: 1.6, strokeDasharray: '3 6' },
-        markerEnd: { type: MarkerType.ArrowClosed, width: 11, height: 11, color: '#5b6683' },
+        style: { stroke: '#4a4a52', strokeWidth: 1.6, strokeDasharray: '3 6' },
+        markerEnd: { type: MarkerType.ArrowClosed, width: 11, height: 11, color: '#4a4a52' },
       };
     default: // contains
       return {
         ...base,
-        style: { stroke: '#556085', strokeWidth: 1.3, strokeDasharray: '6 5' },
+        style: { stroke: '#2e2e33', strokeWidth: 1.3, strokeDasharray: '6 5' },
       };
   }
 }
