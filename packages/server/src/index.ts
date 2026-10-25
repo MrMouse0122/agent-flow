@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { extname, join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -102,15 +102,17 @@ export async function createApp(opts: AppOptions = {}): Promise<AppContext> {
     return computeGraph(events);
   });
 
-  // 静态托管 web 构建产物（存在才启用；SPA 回退到 index.html）
+  // 静态托管 web 构建产物（存在才启用；目录或未命中路径回退 index.html —— SPA）
   const webDist = resolve(dirname(fileURLToPath(import.meta.url)), '../../web/dist');
   if (existsSync(webDist)) {
     app.setNotFoundHandler(async (req, reply) => {
-      const rel = (req.url.split('?')[0] ?? '/').replace(/\/+$/, '') || '/';
-      let filePath = resolve(webDist, '.' + rel);
+      const rel = req.url.split('?')[0] ?? '/';
+      let filePath = resolve(webDist, '.' + (rel === '/' ? '/index.html' : rel));
       if (!filePath.startsWith(webDist)) return reply.code(404).send('not found');
-      if (!existsSync(filePath) || !readFileSync(filePath).length) filePath = join(webDist, 'index.html');
-      if (!existsSync(filePath)) return reply.code(404).send('not found');
+      if (!existsSync(filePath) || !statSync(filePath).isFile()) {
+        filePath = join(webDist, 'index.html'); // SPA 回退
+      }
+      if (!existsSync(filePath) || !statSync(filePath).isFile()) return reply.code(404).send('not found');
       reply.header('content-type', MIME[extname(filePath).toLowerCase()] ?? 'application/octet-stream');
       return reply.send(readFileSync(filePath));
     });
