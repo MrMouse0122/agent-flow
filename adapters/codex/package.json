@@ -1,0 +1,11 @@
+{
+  "name": "@agent-flow/adapter-codex",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@agent-flow/protocol": "*",
+    "chokidar": "^4.0.0"
+  }
+}

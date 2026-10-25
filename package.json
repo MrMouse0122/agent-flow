@@ -1,0 +1,22 @@
+{
+  "name": "agent-flow",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "adapters/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "start": "npm run start -w apps/cli",
+    "demo": "npm run demo -w apps/cli"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "esbuild": "^0.24.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}
