@@ -8,9 +8,16 @@ AI 一开始思考、动手，面板就实时长出可视化：**故事线**（�
 ZCode hooks ────────┐
 ZCode skill（AI 自述）─┤
 Codex notify+watcher ─┼→ adapter(×N) → HTTP → server(daemon) ─ WebSocket → web 面板
-任意 JSONL 日志 ──────┘                      ↓
-                                  JSONL 会话存档（回放用）
+WorkBuddy watcher ────┤                      ↓
+DeepSeek Harness 插件 ─┤           JSONL 会话存档（回放用）
+任意 JSONL 日志 ──────┘
 ```
+
+## 环境要求
+
+- Node.js ≥ 20.11（用了 `import.meta.dirname` 等 API；实测环境 24.17）
+- Windows 为主力开发与实测平台（hook / notify / watcher 脚本均为零依赖 Node 脚本，理论上跨平台，macOS/Linux 未实测）
+- 无需数据库：面板数据是 append-only JSONL，存 `~/.agent-flow/sessions/`
 
 ## 快速开始
 
@@ -20,6 +27,10 @@ npm run build          # 构建前端（首次必须）
 npm run start          # 启动守护进程并自动打开面板 http://127.0.0.1:4765
 npm run demo           # 另开终端：推送模拟会话（skill 风格，AI 原话 why）
 ```
+
+启动后什么都不用配：在已接入的客户端里正常干活，面板会自动出现会话并实时生长。
+日常使用（看故事线 / 切流程图 / 点节点看为什么 / 回放倍速）全部在网页里点选完成；
+更多运维命令（清理会话、隔离端口冒烟、全量校验）见 [HANDOVER.md](HANDOVER.md)。
 
 ## 接入你的 Agent 客户端
 
