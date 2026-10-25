@@ -1,10 +1,10 @@
 /**
- * 故事线视图：从上往下按时间读「任务是怎么完成的」。
- * 顶部一段大白话总结；下面时间线：提问 → 计划分隔 → 每步（做了什么 + 为什么）→ 完成；
- * 失败标红、紧随其后的步骤标记「补救」。点击任意行打开右侧详情面板。
+ * 故事线视图（小白友好版）：从上往下按时间读「任务是怎么完成的」。
+ * 顶部大白话总结；步骤行 = 序号 + 做了什么 + ↑ 承接上一步 + ↳ 为什么 + ● 结果；
+ * 失败标红、补救打标记。点击任意行打开右侧详情面板。
  */
 import { useMemo } from 'react';
-import type { Graph } from '@agent-flow/protocol';
+import type { AgentEvent, Graph } from '@agent-flow/protocol';
 import { buildStory } from './story';
 import { formatClock } from './util';
 
@@ -18,11 +18,12 @@ const KIND_BADGE: Record<string, { label: string; cls: string }> = {
 
 interface StoryViewProps {
   graph: Graph | null;
+  events: AgentEvent[];
   onSelectNode: (nodeId: string | null) => void;
 }
 
-export default function StoryView({ graph, onSelectNode }: StoryViewProps) {
-  const story = useMemo(() => (graph ? buildStory(graph) : null), [graph]);
+export default function StoryView({ graph, events, onSelectNode }: StoryViewProps) {
+  const story = useMemo(() => (graph ? buildStory(graph, events) : null), [graph, events]);
   if (!story || story.blocks.length === 0) return null;
 
   return (
@@ -31,45 +32,63 @@ export default function StoryView({ graph, onSelectNode }: StoryViewProps) {
         <span className="af-story-summary-icon" aria-hidden>
           📖
         </span>
-        <p>{story.summary}</p>
+        <div>
+          <p>{story.summary}</p>
+          <p className="af-story-legend">
+            每一步从上到下按时间排列：↑ 与上一步的联系 · ↳ 为什么这么做 · ● 这一步的结果（点击任意步骤看完整详情）
+          </p>
+        </div>
       </div>
       <ol className="af-story-list">
-        {story.blocks.map(({ step, remediation }) => {
-          const badge = KIND_BADGE[step.kind] ?? { label: step.kind, cls: '' };
-          if (step.kind === 'plan-item') {
+        {story.blocks.map((b) => {
+          const badge = KIND_BADGE[b.step.kind] ?? { label: b.step.kind, cls: '' };
+          if (b.step.kind === 'plan-item') {
+            const plan = b as { actionCount?: number; planIndex?: number };
             return (
-              <li key={step.id} className="af-story-row af-story-plan">
-                <span className={`af-badge ${badge.cls}`}>{badge.label}</span>
-                <span className="af-story-plan-title" title={step.label}>
-                  {step.label}
+              <li key={b.step.id} className="af-story-row af-story-plan">
+                <span className={`af-badge ${badge.cls}`}>计划 {plan.planIndex}</span>
+                <span className="af-story-plan-title" title={b.step.label}>
+                  {b.step.label}
                 </span>
+                {!!plan.actionCount && <span className="af-story-plan-meta">{plan.actionCount} 个动作</span>}
               </li>
             );
           }
           const why =
-            step.why.find((w) => w.source === 'tool-input' && w.text) ??
-            step.why.find((w) => w.source === 'plan') ??
-            step.why[0];
+            b.step.why.find((w) => w.source === 'tool-input' && w.text) ??
+            b.step.why.find((w) => w.source === 'plan') ??
+            b.step.why[0];
           return (
             <li
-              key={step.id}
-              className={`af-story-row af-story-step af-story-${step.status} ${remediation ? 'af-story-remediation' : ''}`}
+              key={b.step.id}
+              className={`af-story-row af-story-step af-story-${b.step.status} ${b.remediation ? 'af-story-remediation' : ''}`}
             >
-              <button type="button" className="af-story-btn" onClick={() => onSelectNode(step.id)}>
-                <span className={`af-story-dot af-sd-${step.status}`} aria-hidden />
+              <button type="button" className="af-story-btn" onClick={() => onSelectNode(b.step.id)}>
+                <span className={`af-story-dot af-sd-${b.step.status}`} aria-hidden />
                 <span className="af-story-main">
                   <span className="af-story-head">
                     <span className={`af-badge ${badge.cls}`}>{badge.label}</span>
-                    {step.tool && <span className="af-story-tool af-mono">{step.tool}</span>}
-                    <span className="af-story-title" title={step.label}>
-                      {step.label}
+                    {b.step.tool && <span className="af-story-tool af-mono">{b.step.tool}</span>}
+                    <span className="af-story-title" title={b.step.label}>
+                      {typeof b.index === 'number' ? `${b.index}. ` : ''}
+                      {b.step.label}
                     </span>
-                    {remediation && <span className="af-badge af-badge-remediation">补救</span>}
-                    <span className="af-story-time af-mono">{formatClock(step.ts)}</span>
+                    {b.remediation && <span className="af-badge af-badge-remediation">补救</span>}
+                    <span className="af-story-time af-mono">{formatClock(b.step.ts)}</span>
                   </span>
+                  {b.connect && (
+                    <span className="af-story-connect" title={b.connect}>
+                      ↑ {b.connect}
+                    </span>
+                  )}
                   {why && (
                     <span className="af-story-why" title={why.text}>
-                      ↳ {why.text}
+                      ↳ 原因：{why.text}
+                    </span>
+                  )}
+                  {b.result && (
+                    <span className={`af-story-result ${b.step.status === 'error' ? 'af-story-result-error' : ''}`}>
+                      ● 结果：{b.result}
                     </span>
                   )}
                 </span>

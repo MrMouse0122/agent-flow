@@ -271,7 +271,7 @@ export default function App() {
           {currentSession ? (
             <>
               {storyMode ? (
-                <StoryView graph={displayGraph} onSelectNode={setSelectedNodeId} />
+                <StoryView graph={displayGraph} events={state.events} onSelectNode={setSelectedNodeId} />
               ) : (
                 <Canvas
                   key={`${state.currentSessionId ?? 'none'}-${theme}`}
