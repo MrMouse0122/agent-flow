@@ -129,6 +129,32 @@ describe('buildGraph — 边界用例', () => {
     expect(node(g, 'plan:1')!.status).toBe('pending');
   });
 
+  it('名下还有未配对 tool_start 的计划条目 → running', () => {
+    const g = buildGraph([
+      ev({ id: 'a', ts: 0, phase: 'user_prompt', title: '用户：干活' }),
+      ev({ id: 'b', ts: 100, phase: 'plan', title: '计划', planItems: ['动手改', '跑验证'] }),
+      ev({ id: 'c', ts: 200, phase: 'tool_start', tool: 'Edit', title: '改文件', files: ['x.ts'] }),
+      // 注意：这个 Edit 还没有 tool_end —— 正在执行
+    ]);
+    expect(node(g, 'plan:0')!.status).toBe('running');
+    expect(node(g, 'plan:1')!.status).toBe('pending');
+  });
+
+  it('同一毫秒批量到达的 读→改→验证 也能连边', () => {
+    const t = 1_770_000_000_000; // 同 ts：真实场景里 hook 一次 POST 多条常见
+    const g = buildGraph([
+      ev({ id: 'a', ts: t - 10, phase: 'user_prompt', title: '用户：修 bug' }),
+      ev({ id: 'b', ts: t, phase: 'tool_start', tool: 'Read', title: '读取 a.ts', files: ['a.ts'] }),
+      ev({ id: 'c', ts: t, phase: 'tool_end', tool: 'Read', title: '读取 a.ts', files: ['a.ts'], status: 'ok' }),
+      ev({ id: 'd', ts: t, phase: 'tool_start', tool: 'Edit', title: '修改 a.ts', files: ['a.ts'] }),
+      ev({ id: 'e', ts: t, phase: 'tool_end', tool: 'Edit', title: '修改 a.ts', files: ['a.ts'], status: 'ok' }),
+      ev({ id: 'f', ts: t, phase: 'tool_start', tool: 'Bash', title: '运行 npm test', input: { command: 'npm test' } }),
+      ev({ id: 'g', ts: t, phase: 'tool_end', tool: 'Bash', title: '运行 npm test', status: 'ok', output: { summary: '36 passed' } }),
+    ]);
+    expect(edgeKinds(g, 'n:d')).toContain('read-edit');
+    expect(edgeKinds(g, 'n:f')).toContain('verify');
+  });
+
   it('skill 上报的 note 事件生成说明节点，why 优先采用 agent 原话', () => {
     const g = buildGraph([
       ev({ id: 'a', ts: 0, phase: 'user_prompt', title: '用户：修按钮', input: { prompt: '修按钮' } }),

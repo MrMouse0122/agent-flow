@@ -1,4 +1,4 @@
-import { appendFileSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
+import { appendFileSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { sanitizeEvent, type AgentEvent, type SessionSummary } from '@agent-flow/protocol';
 
@@ -53,9 +53,11 @@ export class SessionStore {
     }
   }
 
-  /** 追加事件：按 id 幂等去重、截断大字段后落盘。返回真正接受的事件。 */
+  /** 追加事件：按 id 幂等去重、截断大字段后落盘（同批同会话合并为一次写）。返回真正接受的事件。 */
   append(events: AgentEvent[]): AgentEvent[] {
     const accepted: AgentEvent[] = [];
+    // 按 sessionId 攒行，最后每个文件只 append 一次（批量事件不再逐条打盘）
+    const pendingWrites = new Map<string, string>();
     for (const raw of events) {
       if (!isValidSessionId(raw.sessionId)) continue;
       let seen = this.seenIds.get(raw.sessionId);
@@ -73,8 +75,18 @@ export class SessionStore {
       }
       st.events.push(ev);
       st.ended = ev.phase === 'turn_end'; // turn_end 之后又来事件 → 翻回 live
-      appendFileSync(join(this.dataDir, 'sessions', `${ev.sessionId}.jsonl`), JSON.stringify(ev) + '\n');
+      pendingWrites.set(
+        ev.sessionId,
+        (pendingWrites.get(ev.sessionId) ?? '') + JSON.stringify(ev) + '\n',
+      );
       accepted.push(ev);
+    }
+    for (const [sessionId, lines] of pendingWrites) {
+      try {
+        appendFileSync(join(this.dataDir, 'sessions', `${sessionId}.jsonl`), lines);
+      } catch {
+        // 落盘失败不阻断内存态（例如磁盘满）；下次重启该批事件会丢，属可接受降级
+      }
     }
     return accepted;
   }
@@ -85,12 +97,31 @@ export class SessionStore {
     return st ? [...st.events].sort((a, b) => a.ts - b.ts) : null;
   }
 
+  /** 删除会话（内存 + JSONL 存档）。返回是否真的删了。 */
+  remove(sessionId: string): boolean {
+    if (!this.sessions.delete(sessionId)) return false;
+    this.seenIds.delete(sessionId);
+    try {
+      rmSync(join(this.dataDir, 'sessions', `${sessionId}.jsonl`), { force: true });
+    } catch {
+      // 文件删不掉就留着（重启后该会话会回来），内存态已清
+    }
+    return true;
+  }
+
   summaries(): SessionSummary[] {
     return [...this.sessions.entries()]
       .map(([sessionId, st]) => {
-        const first = st.events[0]!;
-        const last = st.events.at(-1)!;
-        const prompt = st.events.find((e) => e.phase === 'user_prompt');
+        // 事件到达顺序 ≠ ts 顺序（离线补传/时钟偏差）：firstTs/lastTs 必须取全量极值，
+        // 否则会出现 lastTs < firstTs、会话显示成「一年前」这类怪象
+        let first = st.events[0]!;
+        let last = st.events[0]!;
+        let prompt: AgentEvent | undefined;
+        for (const ev of st.events) {
+          if (ev.ts < first.ts) first = ev;
+          if (ev.ts > last.ts) last = ev;
+          if (!prompt && ev.phase === 'user_prompt') prompt = ev;
+        }
         const promptText =
           prompt && typeof (prompt.input as { prompt?: unknown } | undefined)?.prompt === 'string'
             ? (prompt.input as { prompt: string }).prompt

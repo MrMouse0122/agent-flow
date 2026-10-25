@@ -13,6 +13,8 @@
     "@agent-flow/server": "*",
     "@agent-flow/adapter-zcode": "*",
     "@agent-flow/adapter-codex": "*",
-    "@agent-flow/adapter-generic": "*"
+    "@agent-flow/adapter-generic": "*",
+    "@agent-flow/adapter-workbuddy": "*",
+    "@agent-flow/adapter-ds-harness": "*"
   }
 }

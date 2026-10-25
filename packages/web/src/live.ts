@@ -209,8 +209,11 @@ export class LiveClient implements FlowClient {
     }
     this.ws = ws;
     ws.onopen = () => {
+      const wasReconnect = this.retries > 0;
       this.retries = 0;
       this.dispatch({ type: 'conn', conn: 'connected' });
+      // 断线期间本会话可能漏了事件：重连成功后补拉一次历史（mergeEvents 按 id 去重）
+      if (wasReconnect && this.selected) void this.fetchHistory(this.selected);
     };
     ws.onmessage = (m: MessageEvent) => {
       try {

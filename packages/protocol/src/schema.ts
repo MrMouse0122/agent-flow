@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { AgentEvent } from './types.js';
 
-export const adapterIdSchema = z.enum(['zcode', 'codex', 'ds-harness', 'generic', 'demo']);
+export const adapterIdSchema = z.enum(['zcode', 'codex', 'ds-harness', 'workbuddy', 'generic', 'demo']);
 
 export const agentEventSchema = z
   .object({

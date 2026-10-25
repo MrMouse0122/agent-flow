@@ -2,3 +2,6 @@ node_modules/
 dist/
 *.log
 .DS_Store
+
+# tsc 增量构建产物
+*.tsbuildinfo

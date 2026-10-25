@@ -1,8 +1,9 @@
 {
   "name": "@agent-flow/adapter-ds-harness",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "exports": { ".": "./src/index.ts" },
-  "dependencies": { "@agent-flow/protocol": "*" }
+  "dependencies": { "@agent-flow/protocol": "*" },
+  "dsh": { "bundle": "./cordis.patch.yml" }
 }

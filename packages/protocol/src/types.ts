@@ -5,7 +5,7 @@
  */
 
 /** 事件来源的适配器（也是客户端标识） */
-export type AdapterId = 'zcode' | 'codex' | 'ds-harness' | 'generic' | 'demo';
+export type AdapterId = 'zcode' | 'codex' | 'ds-harness' | 'workbuddy' | 'generic' | 'demo';
 
 export type EventPhase =
   | 'user_prompt' // 用户提出问题/需求

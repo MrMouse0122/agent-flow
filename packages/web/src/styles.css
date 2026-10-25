@@ -1068,6 +1068,7 @@ body {
 .af-adapter-zcode,
 .af-adapter-codex,
 .af-adapter-ds-harness,
+.af-adapter-workbuddy,
 .af-adapter-generic,
 .af-adapter-demo {
   color: var(--text-dim);

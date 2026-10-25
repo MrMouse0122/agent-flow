@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { extname, join, resolve, dirname } from 'node:path';
+import { extname, join, relative, resolve, dirname, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { WebSocket, WebSocketServer, type WebSocket as WsSocket } from 'ws';
@@ -37,6 +37,24 @@ const MIME: Record<string, string> = {
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
 };
+
+/**
+ * 把 URL path 解析为 root 内的绝对路径；带编码解码。
+ * 逃出 root（..、绝对路径、坏编码）返回 null —— 静态服务的唯一入口，防路径穿越。
+ */
+export function resolveWithin(root: string, rel: string): string | null {
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(rel);
+  } catch {
+    return null;
+  }
+  const abs = resolve(root, '.' + (decoded === '/' ? '/index.html' : decoded));
+  // 归属校验用 relative 而非 startsWith：后者会被同级目录名（webDistX）或大小写差异绕过
+  const relToRoot = relative(root, abs);
+  if (relToRoot.startsWith('..') || isAbsolute(relToRoot)) return null;
+  return abs;
+}
 
 export async function createApp(opts: AppOptions = {}): Promise<AppContext> {
   const port = opts.port ?? Number(process.env.AGENT_FLOW_PORT ?? 4765);
@@ -105,17 +123,32 @@ export async function createApp(opts: AppOptions = {}): Promise<AppContext> {
     return computeGraph(events);
   });
 
+  // 删除会话（误报的冒烟数据、演示会话清理用）。删掉后广播新列表，在线面板即时消失。
+  app.delete('/api/sessions/:id', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    if (!store.remove(id)) return reply.code(404).send({ error: 'session not found' });
+    broadcastSessions();
+    return { ok: true };
+  });
+
   // 静态托管 web 构建产物（存在才启用；目录或未命中路径回退 index.html —— SPA）
   const webDist = resolve(dirname(fileURLToPath(import.meta.url)), '../../web/dist');
   if (existsSync(webDist)) {
+    const isFile = (p: string): boolean => {
+      try {
+        return existsSync(p) && statSync(p).isFile();
+      } catch {
+        return false; // 悬空符号链接 / 权限问题等一律按不存在处理
+      }
+    };
     app.setNotFoundHandler(async (req, reply) => {
-      const rel = req.url.split('?')[0] ?? '/';
-      let filePath = resolve(webDist, '.' + (rel === '/' ? '/index.html' : rel));
-      if (!filePath.startsWith(webDist)) return reply.code(404).send('not found');
-      if (!existsSync(filePath) || !statSync(filePath).isFile()) {
+      const target = resolveWithin(webDist, req.url.split('?')[0] ?? '/');
+      if (!target) return reply.code(404).send('not found');
+      let filePath = target;
+      if (!isFile(filePath)) {
         filePath = join(webDist, 'index.html'); // SPA 回退
       }
-      if (!existsSync(filePath) || !statSync(filePath).isFile()) return reply.code(404).send('not found');
+      if (!isFile(filePath)) return reply.code(404).send('not found');
       reply.header('content-type', MIME[extname(filePath).toLowerCase()] ?? 'application/octet-stream');
       return reply.send(readFileSync(filePath));
     });

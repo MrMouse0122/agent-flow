@@ -197,8 +197,12 @@ export function buildGraph(input: AgentEvent[]): Graph {
         s.parentPlanItemId = planItems[which]!.node.id;
       });
     }
+    // 计划条目状态：没分到步骤 = pending；名下还有进行中的步骤 = running；
+    // 其余 = ok（历史上失败过但已收尾的仍算完成，失败体现在步骤节点本身）
     for (const p of planItems) {
-      p.node.status = steps.some((s) => s.parentPlanItemId === p.node.id) ? 'ok' : 'pending';
+      const owned = steps.filter((s) => s.parentPlanItemId === p.node.id);
+      p.node.status =
+        owned.length === 0 ? 'pending' : owned.some((s) => s.status === 'running') ? 'running' : 'ok';
     }
   }
 
@@ -228,31 +232,37 @@ export function buildGraph(input: AgentEvent[]): Graph {
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const toolByTs = [...toolNodes].sort((a, b) => a.ts - b.ts);
 
-  // 2. read-edit：Edit/Write 与共享文件的最近一次 Read
-  for (const e of toolByTs) {
+  // 2. read-edit：Edit/Write 与共享文件的最近一次 Read。
+  //    用排序位置而非 ts 比较：同毫秒批量到达（hook 一次 POST 多条）也能连边
+  for (let i = 0; i < toolByTs.length; i++) {
+    const e = toolByTs[i]!;
     if (!e.tool || !EDIT_TOOLS.has(e.tool)) continue;
     const eFiles = new Set((e.files ?? []).map(normPath));
     if (eFiles.size === 0) continue;
     let best: StepNode | undefined;
-    for (const r of toolByTs) {
-      if (r.ts >= e.ts) break;
-      if (r.tool && READ_TOOLS.has(r.tool) && (r.files ?? []).some((f) => eFiles.has(normPath(f)))) best = r;
+    for (let j = i - 1; j >= 0; j--) {
+      const r = toolByTs[j]!;
+      if (r.tool && READ_TOOLS.has(r.tool) && (r.files ?? []).some((f) => eFiles.has(normPath(f)))) {
+        best = r;
+        break;
+      }
     }
     if (best) edges.push({ from: best.id, to: e.id, kind: 'read-edit' });
   }
 
-  // 3. verify：验证类节点 收 上个验证节点之后的全部 Edit/Write
-  const verifyNodes = toolByTs.filter((n) => {
+  // 3. verify：验证类节点 收 上个验证节点之后的全部 Edit/Write（同样按位置界定区间）
+  const verifyIdx: number[] = [];
+  toolByTs.forEach((n, i) => {
     const head = events.find((e) => e.id === n.eventIds[0]);
-    return head ? isVerify(n, head) : false;
+    if (head && isVerify(n, head)) verifyIdx.push(i);
   });
-  let prevVerifyTs = -Infinity;
-  for (const v of verifyNodes) {
-    for (const e of toolByTs) {
-      if (e.ts <= prevVerifyTs || e.ts >= v.ts) continue;
-      if (e.tool && EDIT_TOOLS.has(e.tool)) edges.push({ from: e.id, to: v.id, kind: 'verify' });
+  let prevVerify = -1;
+  for (const vi of verifyIdx) {
+    for (let ei = prevVerify + 1; ei < vi; ei++) {
+      const e = toolByTs[ei]!;
+      if (e.tool && EDIT_TOOLS.has(e.tool)) edges.push({ from: e.id, to: toolByTs[vi]!.id, kind: 'verify' });
     }
-    prevVerifyTs = v.ts;
+    prevVerify = vi;
   }
 
   // 4. seq 兜底：无入边的工具/说明节点连到前一个（同计划组优先）

@@ -16,6 +16,7 @@ const ADAPTER_LABEL: Record<string, string> = {
   zcode: 'ZCode',
   codex: 'Codex',
   'ds-harness': 'DS-Harness',
+  workbuddy: 'WorkBuddy',
   generic: '通用',
   demo: '演示',
 };

@@ -24,6 +24,7 @@ interface HookEntry {
   type?: string;
   command?: string;
   args?: unknown[];
+  timeoutMs?: number;
 }
 
 const isOurEntry = (entry: HookEntry) =>

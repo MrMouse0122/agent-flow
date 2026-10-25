@@ -19,7 +19,7 @@ function notifyToEvent(argvJson, now) {
   const sessionId = (typeof j.session_id === 'string' && j.session_id) || 'codex-unknown';
   const ts = now || Date.now();
   return {
-    id: 'codex:' + sessionId + ':notify' + ts.toString(36),
+    id: 'codex:' + sessionId + ':notify' + ts.toString(36) + Math.random().toString(36).slice(2, 6),
     ts,
     sessionId,
     adapter: 'codex',

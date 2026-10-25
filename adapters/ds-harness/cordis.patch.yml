@@ -1,0 +1,9 @@
+# AgentFlow telemetry —— dsh cordis.patch 补丁
+# 用法（二选一）：
+#   dsh plugin --profile <你的profile> add <本包路径>            # 按 npm 包安装（读 dsh.bundle 字段）
+#   dsh --profile web --patch <本文件绝对路径>                    # 一次性挂载
+# patch 按行 id 定位配置树并插入插件行；若插入语法随版本变化，
+# 以 `dsh --profile <p> --dump-default-config` 输出的当前结构为准。
+- id: agent-flow-telemetry
+  name: "@agent-flow/adapter-ds-harness/plugin"
+  config: {}

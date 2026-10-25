@@ -31,11 +31,138 @@ function textOf(content: unknown): string | undefined {
   return undefined;
 }
 
+/** envelope 上的时间戳：ISO 字符串或毫秒数，解析不出返回 undefined */
+function tsOf(v: unknown): number | undefined {
+  if (typeof v === 'string') {
+    const ms = Date.parse(v);
+    return Number.isFinite(ms) ? ms : undefined;
+  }
+  if (typeof v === 'number' && Number.isFinite(v) && v > 1e12) return v;
+  return undefined;
+}
+
+/** function_call 的 arguments：真实 rollout 里是 JSON 字符串，兼容对象形态 */
+function argsOf(raw: unknown): Record<string, unknown> {
+  if (typeof raw === 'string' && raw.trim()) {
+    try {
+      const v: unknown = JSON.parse(raw);
+      return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : { _raw: raw };
+    } catch {
+      return { _raw: raw };
+    }
+  }
+  return raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+}
+
+/** shell 类命令可能是 argv 数组（如 ["bash","-lc","npm test"]），拼成一行便于阅读 */
+function commandText(args: Record<string, unknown>): string | undefined {
+  const c = args.command;
+  if (typeof c === 'string' && c) return c;
+  if (Array.isArray(c) && c.length > 0) return c.map((x) => String(x)).join(' ');
+  return undefined;
+}
+
+function fileOf(args: Record<string, unknown>): string | undefined {
+  return typeof args.file_path === 'string'
+    ? args.file_path
+    : typeof args.path === 'string'
+      ? args.path
+      : undefined;
+}
+
+function toolEvent(
+  mk: (phase: AgentEvent['phase'], extra: Partial<AgentEvent>) => AgentEvent,
+  rawTool: string,
+  args: Record<string, unknown>,
+  error: boolean,
+): AgentEvent {
+  const tool = normalizeTool(rawTool);
+  const command = commandText(args);
+  const file = fileOf(args);
+  const title = command
+    ? `执行 ${cut(command, 40)}`
+    : file
+      ? `${tool} ${cut(file, 60)}`
+      : `调用 ${tool}`;
+  return mk('tool_end', {
+    tool,
+    title,
+    files: file ? [file] : undefined,
+    input: Object.keys(args).length > 0 ? args : undefined,
+    status: error ? 'error' : 'ok',
+  });
+}
+
+/**
+ * 真实 Codex rollout 行（~/.codex/sessions 目录下按日期嵌套的 .jsonl，格式参照
+ * openai/codex 开源仓库）：
+ *   {"timestamp":"…","type":"response_item","payload":{…}}
+ *   {"timestamp":"…","type":"event_msg","payload":{"type":"user_message","message":"…"}}
+ * 事件主体在 payload 里，按 payload.type 严格白名单分发；未知类型（reasoning、
+ * function_call_output、token_count…）一律忽略，避免凭空造节点。
+ */
+/**
+ * rollout payload 分发。type 通常在 payload 上（message/function_call/…）；
+ * 唯一例外是 session_meta：type 在信封层，payload 里只有 id/instructions 等。
+ */
+function mapRolloutPayload(
+  p: Record<string, unknown>,
+  sessionId: string,
+  lineNo: number,
+  ts: number,
+  envelopeType = '',
+): AgentEvent | null {
+  const mk = (phase: AgentEvent['phase'], extra: Partial<AgentEvent>): AgentEvent => ({
+    id: `codex:${sessionId}:${lineNo}`,
+    ts,
+    sessionId,
+    adapter: 'codex',
+    phase,
+    title: '',
+    ...extra,
+  });
+  const ptype =
+    typeof p.type === 'string'
+      ? p.type
+      : typeof envelopeType === 'string' && envelopeType.toLowerCase() === 'session_meta'
+        ? 'session_meta'
+        : '';
+  switch (ptype) {
+    case 'session_meta':
+      return mk('note', { title: 'Codex 会话开始' });
+    case 'user_message': {
+      const text = typeof p.message === 'string' ? p.message : textOf(p.message);
+      if (!text) return null;
+      return mk('user_prompt', { title: '用户：' + cut(text, 60), input: { prompt: text } });
+    }
+    case 'agent_message': {
+      const text = typeof p.message === 'string' ? p.message : textOf(p.message);
+      if (!text) return null;
+      return mk('note', { title: cut(text, 60) });
+    }
+    case 'task_complete':
+    case 'turn_completed':
+    case 'agent_turn_complete':
+      return mk('turn_end', { title: 'Codex 本轮完成' });
+    case 'message': {
+      const text = textOf(p.content);
+      if (!text) return null;
+      if (p.role === 'user') return mk('user_prompt', { title: '用户：' + cut(text, 60), input: { prompt: text } });
+      if (p.role === 'assistant') return mk('note', { title: cut(text, 60) });
+      return null;
+    }
+    case 'function_call':
+      return toolEvent(mk, typeof p.name === 'string' ? p.name : 'Bash', argsOf(p.arguments), !!p.error);
+    default:
+      return null;
+  }
+}
+
 /**
  * 把一行 Codex 会话日志映射为 AgentEvent。
- * 注意：行格式基于公开样例的假设实现（详见包 README），接真实 ~/.codex/sessions 后可能需要调整。
- * 工具调用一行给一个 tool_end（推理层支持孤立 end 建
- * 节点），避免臆造 start 时间。
+ * 两条路径：真实 rollout 格式（payload 信封）严格分发；
+ * 顶层扁平的旧格式（role/name/type 直接字段）保持原有宽容映射。
+ * 工具调用一行给一个 tool_end（推理层支持孤立 end 建节点），避免臆造 start 时间。
  */
 export function mapCodexLine(
   rec: unknown,
@@ -44,10 +171,18 @@ export function mapCodexLine(
   now = Date.now()
 ): AgentEvent | null {
   if (!rec || typeof rec !== 'object') return null;
-  const r = rec as Record<string, unknown>;
+  const env = rec as Record<string, unknown>;
+  const ts = tsOf(env.timestamp) ?? tsOf(env.ts) ?? now;
+
+  const inner = env.payload;
+  if (inner && typeof inner === 'object' && !Array.isArray(inner)) {
+    return mapRolloutPayload(inner as Record<string, unknown>, sessionId, lineNo, ts, typeof env.type === 'string' ? env.type : '');
+  }
+
+  const r = env;
   const mk = (phase: AgentEvent['phase'], extra: Partial<AgentEvent>): AgentEvent => ({
     id: `codex:${sessionId}:${lineNo}`,
-    ts: now,
+    ts,
     sessionId,
     adapter: 'codex',
     phase,
@@ -75,27 +210,7 @@ export function mapCodexLine(
   const rawTool =
     typeof r.name === 'string' ? r.name : typeof r.tool === 'string' ? r.tool : type.includes('function') ? 'Bash' : undefined;
   if (rawTool) {
-    const args = (r.arguments ?? r.input ?? r.args ?? r.parameters ?? {}) as Record<string, unknown>;
-    const command = typeof args.command === 'string' ? args.command : undefined;
-    const file =
-      typeof args.file_path === 'string'
-        ? args.file_path
-        : typeof args.path === 'string'
-          ? args.path
-          : undefined;
-    const tool = normalizeTool(rawTool);
-    const title = command
-      ? `执行 ${cut(command, 40)}`
-      : file
-        ? `${tool} ${cut(file, 60)}`
-        : `调用 ${tool}`;
-    return mk('tool_end', {
-      tool,
-      title,
-      files: file ? [file] : undefined,
-      input: Object.keys(args).length > 0 ? args : undefined,
-      status: r.error ? 'error' : 'ok',
-    });
+    return toolEvent(mk, rawTool, argsOf(r.arguments ?? r.input ?? r.args ?? r.parameters), !!r.error);
   }
   return null;
 }

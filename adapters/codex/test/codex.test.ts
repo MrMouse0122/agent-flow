@@ -53,6 +53,61 @@ describe('mapCodexLine', () => {
   });
 });
 
+describe('mapCodexLine — 真实 rollout 格式（payload 信封）', () => {
+  const TS = '2026-10-25T12:00:00.000Z';
+
+  it('event_msg/user_message → user_prompt，timestamp 解析为事件 ts', () => {
+    const ev = mapCodexLine(
+      { timestamp: TS, type: 'event_msg', payload: { type: 'user_message', message: '修一下登录页' } },
+      's', 1,
+    );
+    expect(ev!.phase).toBe('user_prompt');
+    expect(ev!.title).toBe('用户：修一下登录页');
+    expect(ev!.ts).toBe(Date.parse(TS));
+  });
+
+  it('event_msg/agent_message → note；task_complete → turn_end', () => {
+    const note = mapCodexLine({ timestamp: TS, type: 'event_msg', payload: { type: 'agent_message', message: '我看下' } }, 's', 2);
+    expect(note!.phase).toBe('note');
+    const done = mapCodexLine({ timestamp: TS, type: 'event_msg', payload: { type: 'task_complete', last_agent_message: '修好了' } }, 's', 3);
+    expect(done!.phase).toBe('turn_end');
+  });
+
+  it('response_item/function_call：arguments 是 JSON 字符串，command 数组拼一行', () => {
+    const ev = mapCodexLine(
+      {
+        timestamp: TS,
+        type: 'response_item',
+        payload: { type: 'function_call', name: 'shell', arguments: JSON.stringify({ command: ['bash', '-lc', 'npm test'] }) },
+      },
+      's', 4,
+    );
+    expect(ev!.phase).toBe('tool_end');
+    expect(ev!.tool).toBe('Bash');
+    expect(ev!.title).toBe('执行 bash -lc npm test');
+  });
+
+  it('session_meta → 会话开始 note；function_call_output/reasoning → null', () => {
+    const meta = mapCodexLine({ timestamp: TS, type: 'session_meta', payload: { id: 'abc', instructions: 'x' } }, 's', 5);
+    expect(meta!.phase).toBe('note');
+    expect(mapCodexLine({ timestamp: TS, type: 'response_item', payload: { type: 'function_call_output', call_id: 'c', output: 'ok' } }, 's', 6)).toBeNull();
+    expect(mapCodexLine({ timestamp: TS, type: 'response_item', payload: { type: 'reasoning', summary: [] } }, 's', 7)).toBeNull();
+  });
+
+  it('response_item/message 按 role 分流 user/assistant', () => {
+    const user = mapCodexLine(
+      { timestamp: TS, type: 'response_item', payload: { type: 'message', role: 'user', content: [{ type: 'input_text', text: '看看报错' }] } },
+      's', 8,
+    );
+    expect(user!.phase).toBe('user_prompt');
+    const bot = mapCodexLine(
+      { timestamp: TS, type: 'response_item', payload: { type: 'message', role: 'assistant', content: [{ type: 'output_text', text: '好的' }] } },
+      's', 9,
+    );
+    expect(bot!.phase).toBe('note');
+  });
+});
+
 describe('notify.cjs', () => {
   it('argv JSON → turn_end 事件；坏输入 → null', () => {
     const ev = notifyToEvent(JSON.stringify({ session_id: 'abc', 'turn-id': 3 }), 1000);

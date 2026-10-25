@@ -7,6 +7,8 @@ import { startServer } from '@agent-flow/server';
 import { installZcode, uninstallZcode } from '@agent-flow/adapter-zcode';
 import { startCodexWatcher } from '@agent-flow/adapter-codex';
 import { startGenericWatcher } from '@agent-flow/adapter-generic';
+import { startWorkbuddyWatcher } from '@agent-flow/adapter-workbuddy';
+import { dsHarnessPatchFile, dsHarnessPluginDir } from '@agent-flow/adapter-ds-harness';
 import { classicScenario, skillScenario } from './demoScenarios.js';
 
 const PORT = Number(process.env.AGENT_FLOW_PORT ?? 4765);
@@ -53,12 +55,31 @@ async function cmdStart(args: string[]): Promise<void> {
     if (a === '--watch' && args[i + 1]) watchDirs.push(args[i + 1]!);
   });
 
+  // 幂等启动：已有实例在线时直接复用（再 listen 只会 EADDRINUSE 崩掉）
+  if (await serverOnline()) {
+    console.log(`AgentFlow server 已在 ${URL} 运行，直接复用。`);
+    if (!noOpen) openBrowser(URL);
+    console.log('如需重载配置，请先 Ctrl+C 停掉现有实例再 start。');
+    return;
+  }
+
   await startServer({});
 
   const codexDir = join(homedir(), '.codex', 'sessions');
   if (existsSync(codexDir)) {
     startCodexWatcher({ sessionsDir: codexDir });
     console.log(`已启动 Codex 会话监视：${codexDir}`);
+  }
+  const workbuddyDir = join(homedir(), '.workbuddy');
+  if (existsSync(workbuddyDir)) {
+    startWorkbuddyWatcher({ homeDir: workbuddyDir });
+    console.log(`已启动 WorkBuddy 审计/变更监视：${workbuddyDir}`);
+  }
+  const dshDir = join(homedir(), '.dsh');
+  if (existsSync(dshDir)) {
+    console.log('检测到 DeepSeek Harness（~/.dsh）：按 README 挂载 telemetry 插件以接入会话事件');
+    console.log(`  dsh plugin add ${dsHarnessPluginDir()}`);
+    console.log(`  或：dsh --profile web --patch ${dsHarnessPatchFile()}`);
   }
   for (const dir of watchDirs) {
     startGenericWatcher({ dir });
@@ -158,11 +179,15 @@ async function main(): Promise<void> {
       console.log(`AgentFlow — AI Agent 执行过程实时流程图
 
 用法：
-  agent-flow start [--no-open] [--watch <目录>]   启动守护进程（server + codex/generic 监视）并打开面板
+  agent-flow start [--no-open] [--watch <目录>]   启动守护进程（server + codex/workbuddy/generic 监视）并打开面板
   agent-flow demo [--speed=4] [--classic]           推送模拟会话（默认 skill 风格；--classic 为纯工具调用版）
   agent-flow install / uninstall                  注册 / 移除 ZCode hooks
   agent-flow skill [--remove]                     安装 / 移除「实时上报」skill（AI 自己叙述每一步）
   agent-flow open                                 打开面板
+
+自动接入：~/.codex 与 ~/.workbuddy 存在时 start 会自动监视；
+DeepSeek Harness 按 adapters/ds-harness/README.md 挂载 telemetry 插件；
+其他客户端用 --watch <日志目录> 兜底。
 `);
       process.exit(cmd ? 1 : 0);
   }

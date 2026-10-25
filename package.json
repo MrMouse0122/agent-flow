@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "test": "vitest run",
+    "typecheck": "tsc -p packages/protocol && tsc -p packages/inference && tsc -p packages/server && tsc -p apps/cli && tsc -p adapters/zcode && tsc -p adapters/codex && tsc -p adapters/generic && tsc -p adapters/workbuddy && tsc -p adapters/ds-harness",
     "start": "npm run start -w apps/cli",
     "demo": "npm run demo -w apps/cli"
   },
