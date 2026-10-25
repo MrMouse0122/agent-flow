@@ -1,30 +1,85 @@
 /* ============ AgentFlow 深色开发者工具主题 ============ */
 
 :root {
-  /* BH 设计语言：zinc 中性暗色 + 语义色（shadcn 风格） */
-  --bg0: #0a0a0a; /* 页面底 */
-  --bg1: #0f0f10; /* 侧栏/面板 */
-  --bg2: #171717; /* 卡片 */
-  --bg3: #212124; /* hover / 按压 */
-  --line: rgba(255, 255, 255, 0.1);
-  --line-soft: rgba(255, 255, 255, 0.06);
-  --text: #fafafa;
-  --text-dim: #a3a3a3;
-  --text-faint: #737373;
-  --inv: #e5e5e5; /* 反白强调（shadcn primary） */
-  --inv-fg: #171717;
-  --green: #4ade80;
-  --green-dim: rgba(74, 222, 128, 0.12);
-  --red: #f87171;
-  --red-dim: rgba(248, 113, 113, 0.1);
-  --amber: #fbbf24;
-  --amber-dim: rgba(251, 191, 36, 0.12);
+  /* BH 设计语言·浅色（默认）：zinc 中性 + 语义色（shadcn 风格） */
+  --bg0: #ffffff; /* 页面底 */
+  --bg1: #fafafa; /* 侧栏/面板 */
+  --bg2: #ffffff; /* 卡片 */
+  --bg3: #f5f5f5; /* hover / 按压 */
+  --line: #e5e5e5;
+  --line-soft: #ededed;
+  --line-strong: #d4d4d4;
+  --plan-bg: rgba(0, 0, 0, 0.02);
+  --text: #0a0a0a;
+  --text-dim: #737373;
+  --text-faint: #a3a3a3;
+  --inv: #171717; /* 反白强调（浅色主题 = 黑底白字） */
+  --inv-fg: #fafafa;
+  --inv-dim: rgba(0, 0, 0, 0.05);
+  --green: #15803d;
+  --green-dim: rgba(21, 128, 61, 0.08);
+  --red: #dc2626;
+  --red-dim: rgba(220, 38, 38, 0.05);
+  --amber: #b45309;
+  --amber-dim: rgba(180, 83, 9, 0.08);
+  --edge-strong: #3f3f46;
+  --edge-mid: #737373;
+  --edge-seq: #b5b5bd;
+  --edge-faint: #e0e0e5;
+  --grid: #ebebef;
+  --handle: #a3a3a3;
+  --placeholder: #dcdcdc;
+  --panel-shadow: rgba(0, 0, 0, 0.08);
+  --scroll-thumb: #d4d4d4;
+  --scroll-thumb-hover: #c4c4c4;
+  --json-key: #3b5bb8;
+  --json-str: #3d7a3d;
+  --json-num: #b45309;
+  --json-bool: #7c5cc4;
   --radius: 10px;
   --mono: ui-monospace, 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
   --sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
   --topbar-h: 52px;
   --sidebar-w: 260px;
   --detail-w: 360px;
+}
+
+:root[data-theme='dark'] {
+  /* BH 设计语言·深色 */
+  --bg0: #0a0a0a;
+  --bg1: #0f0f10;
+  --bg2: #171717;
+  --bg3: #212124;
+  --line: var(--line);
+  --line-soft: color-mix(in srgb, var(--inv) 6%, transparent);
+  --line-strong: var(--line-strong);
+  --plan-bg: var(--plan-bg);
+  --text: #fafafa;
+  --text-dim: #a3a3a3;
+  --text-faint: #737373;
+  --inv: #e5e5e5;
+  --inv-fg: #171717;
+  --inv-dim: var(--inv-dim);
+  --green: #4ade80;
+  --green-dim: rgba(74, 222, 128, 0.12);
+  --red: #f87171;
+  --red-dim: rgba(248, 113, 113, 0.1);
+  --amber: #fbbf24;
+  --amber-dim: rgba(251, 191, 36, 0.12);
+  --edge-strong: #b3b3bd;
+  --edge-mid: #8f8f9a;
+  --edge-seq: #4a4a52;
+  --edge-faint: #2e2e33;
+  --grid: #1d1d20;
+  --handle: #52525b;
+  --placeholder: #303035;
+  --panel-shadow: rgba(0, 0, 0, 0.4);
+  --scroll-thumb: #262626;
+  --scroll-thumb-hover: #333338;
+  --json-key: #c9d4e8;
+  --json-str: #b5d8b0;
+  --json-num: #ff9e64;
+  --json-bool: #bb9af7;
 }
 
 * {
@@ -113,7 +168,7 @@ body {
 
 .af-chip-live {
   color: var(--green);
-  border-color: rgba(74, 222, 128, 0.35);
+  border-color: color-mix(in srgb, var(--green) 35%, transparent);
   background: var(--green-dim);
 }
 
@@ -205,7 +260,7 @@ body {
 
 .af-btn:hover {
   background: var(--bg3);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--line-strong);
 }
 
 .af-btn-icon {
@@ -225,7 +280,7 @@ body {
 
 .af-btn-demo {
   width: 100%;
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: var(--line-strong);
   color: var(--text);
   background: var(--bg3);
 }
@@ -475,7 +530,7 @@ body {
 
 .af-placeholder-mark {
   font-size: 30px;
-  color: #303035;
+  color: var(--placeholder);
 }
 
 .af-canvas-placeholder p {
@@ -490,7 +545,7 @@ body {
 }
 
 .react-flow__controls {
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 2px 10px var(--panel-shadow);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -516,7 +571,7 @@ body {
 }
 
 .react-flow__attribution a {
-  color: #4a4a52;
+  color: var(--text-faint);
   font-size: 9px;
 }
 
@@ -527,7 +582,7 @@ body {
   min-height: 0;
   border: none !important;
   border-radius: 50%;
-  background: #52525b !important;
+  background: var(--handle) !important;
 }
 
 /* ---------- 画布节点 ---------- */
@@ -550,8 +605,8 @@ body {
 }
 
 .af-node.af-selected {
-  border-color: rgba(255, 255, 255, 0.55);
-  box-shadow: 0 0 0 3px rgba(163, 163, 163, 0.22), 0 4px 14px rgba(0, 0, 0, 0.45);
+  border-color: color-mix(in srgb, var(--inv) 55%, transparent);
+  box-shadow: 0 0 0 3px rgba(163, 163, 163, 0.22), 0 4px 14px var(--panel-shadow);
 }
 
 .af-node-label {
@@ -625,7 +680,7 @@ body {
 }
 
 .af-st-error {
-  border-color: rgba(248, 113, 113, 0.55);
+  border-color: color-mix(in srgb, var(--red) 50%, transparent);
 }
 
 .af-st-error .af-status-dot {
@@ -637,7 +692,7 @@ body {
 }
 
 .af-st-running {
-  border-color: rgba(255, 255, 255, 0.55);
+  border-color: color-mix(in srgb, var(--inv) 55%, transparent);
   animation: af-breathe 1.7s ease-in-out infinite;
 }
 
@@ -650,8 +705,8 @@ body {
 .af-plan {
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px dashed rgba(255, 255, 255, 0.16);
+  background: var(--plan-bg);
+  border: 1px dashed var(--line-strong);
   border-radius: 11px;
 }
 
@@ -663,14 +718,14 @@ body {
   gap: 8px;
   padding: 0 11px;
   cursor: grab;
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+  border-bottom: 1px dashed var(--line);
 }
 
 .af-plan-title {
   min-width: 0;
   font-size: 13.5px;
   font-weight: 600;
-  color: #d4d4d8;
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -685,7 +740,7 @@ body {
   padding: 9px 15px;
   border-radius: 999px;
   background: var(--green-dim);
-  border-color: rgba(74, 222, 128, 0.4);
+  border-color: color-mix(in srgb, var(--green) 40%, transparent);
   color: #c8f0dd;
   font-size: 14px;
 }
@@ -711,7 +766,7 @@ body {
   display: flex;
   flex-direction: column;
   z-index: 20;
-  box-shadow: -12px 0 30px rgba(0, 0, 0, 0.35);
+  box-shadow: -12px 0 30px var(--panel-shadow);
 }
 
 .af-detail-open {
@@ -850,8 +905,8 @@ body {
 
 .af-status-running {
   color: var(--text);
-  border-color: rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: color-mix(in srgb, var(--inv) 30%, transparent);
+  background: var(--inv-dim);
 }
 
 .af-status-running .af-status-dot {
@@ -860,7 +915,7 @@ body {
 
 .af-status-ok {
   color: var(--green);
-  border-color: rgba(74, 222, 128, 0.4);
+  border-color: color-mix(in srgb, var(--green) 40%, transparent);
   background: var(--green-dim);
 }
 
@@ -870,7 +925,7 @@ body {
 
 .af-status-error {
   color: var(--red);
-  border-color: rgba(248, 113, 113, 0.45);
+  border-color: color-mix(in srgb, var(--red) 45%, transparent);
   background: var(--red-dim);
 }
 
@@ -905,13 +960,13 @@ body {
 
 .af-badge-user {
   color: var(--text);
-  border-color: rgba(255, 255, 255, 0.22);
+  border-color: var(--line-strong);
   background: var(--bg3);
 }
 
 .af-badge-plan {
   color: var(--text);
-  border-color: rgba(255, 255, 255, 0.22);
+  border-color: var(--line-strong);
   background: var(--bg3);
 }
 
@@ -946,7 +1001,7 @@ body {
 
 .af-kind-plan-item {
   color: var(--text);
-  border-color: rgba(255, 255, 255, 0.22);
+  border-color: var(--line-strong);
   background: var(--bg3);
 }
 
@@ -956,7 +1011,7 @@ body {
 
 .af-kind-turn-end {
   color: var(--green);
-  border-color: rgba(74, 222, 128, 0.4);
+  border-color: color-mix(in srgb, var(--green) 40%, transparent);
   background: var(--green-dim);
 }
 
@@ -1054,20 +1109,20 @@ body {
 }
 
 .af-json-key {
-  color: #c9d4e8;
+  color: var(--json-key);
 }
 
 .af-json-str {
-  color: #b5d8b0;
+  color: var(--json-str);
   word-break: break-all;
 }
 
 .af-json-num {
-  color: #ff9e64;
+  color: var(--json-num);
 }
 
 .af-json-bool {
-  color: #bb9af7;
+  color: var(--json-bool);
 }
 
 .af-json-null {
@@ -1089,10 +1144,10 @@ body {
 @keyframes af-breathe {
   0%,
   100% {
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6), 0 0 12px 2px rgba(255, 255, 255, 0.18);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--inv) 60%, transparent), 0 0 12px 2px var(--line-strong);
   }
   50% {
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.28), 0 0 3px 0 rgba(255, 255, 255, 0.06);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--inv) 28%, transparent), 0 0 3px 0 color-mix(in srgb, var(--inv) 6%, transparent);
   }
 }
 
@@ -1111,7 +1166,7 @@ body {
 
 .af-viewtoggle {
   display: flex;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--line-strong);
   border-radius: 8px;
   overflow: hidden;
   background: var(--bg1);
@@ -1199,7 +1254,7 @@ body {
 .af-story-plan-title {
   font-size: 15px;
   font-weight: 700;
-  color: #e5e5e5;
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1225,16 +1280,16 @@ body {
 
 .af-story-btn:hover {
   background: var(--bg3);
-  border-color: #36405c;
+  border-color: var(--line-strong);
 }
 
 .af-story-error .af-story-btn {
-  border-color: rgba(248, 113, 113, 0.5);
-  background: var(--red-dim), var(--bg2);
+  border-color: color-mix(in srgb, var(--red) 48%, transparent);
+  background: var(--bg2);
 }
 
 .af-story-running .af-story-btn {
-  border-color: rgba(255, 255, 255, 0.45);
+  border-color: color-mix(in srgb, var(--inv) 45%, transparent);
 }
 
 .af-story-remediation .af-story-btn {
@@ -1256,7 +1311,7 @@ body {
 
 .af-sd-error {
   background: var(--red);
-  box-shadow: 0 0 8px rgba(248, 113, 113, 0.6);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--red) 55%, transparent);
 }
 
 .af-sd-running {
@@ -1315,13 +1370,13 @@ body {
 
 .af-badge-remediation {
   color: var(--amber);
-  border-color: rgba(251, 191, 36, 0.5);
+  border-color: color-mix(in srgb, var(--amber) 50%, transparent);
   background: var(--amber-dim);
 }
 
 .af-kind-note {
-  color: #d4d4d8;
-  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text);
+  border-color: var(--line-strong);
   background: var(--bg3);
 }
 
@@ -1333,12 +1388,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #262626;
+  background: var(--scroll-thumb);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #333338;
+  background: var(--scroll-thumb-hover);
 }
 
 ::-webkit-scrollbar-track {

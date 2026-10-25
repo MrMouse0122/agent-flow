@@ -29,9 +29,23 @@ function useClientState(client: FlowClient | null): LiveState {
   return useSyncExternalStore(subscribe, getSnapshot);
 }
 
+type Theme = 'light' | 'dark';
+
 export default function App() {
   const [liveClient, setLiveClient] = useState<LiveClient | null>(null);
   const [demoClient, setDemoClient] = useState<DemoClient | null>(null);
+  const [theme, setTheme] = useState<Theme>(() =>
+    typeof localStorage !== 'undefined' && localStorage.getItem('af-theme') === 'dark' ? 'dark' : 'light',
+  );
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      localStorage.setItem('af-theme', theme);
+    } catch {
+      /* 隐私模式等场景忽略 */
+    }
+  }, [theme]);
 
   useEffect(() => {
     const c = new LiveClient();
@@ -229,6 +243,13 @@ export default function App() {
           </ul>
 
           <div className="af-sidebar-foot">
+            <button
+              type="button"
+              className="af-btn af-btn-ghost"
+              onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+            >
+              {theme === 'dark' ? '☀ 切换浅色' : '🌙 切换深色'}
+            </button>
             {usingDemo ? (
               <>
                 <div className="af-demo-note">离线演示模式</div>
@@ -253,7 +274,7 @@ export default function App() {
                 <StoryView graph={displayGraph} onSelectNode={setSelectedNodeId} />
               ) : (
                 <Canvas
-                  key={state.currentSessionId ?? 'none'}
+                  key={`${state.currentSessionId ?? 'none'}-${theme}`}
                   graph={displayGraph}
                   sessionKey={state.currentSessionId ?? 'none'}
                   onSelectNode={setSelectedNodeId}

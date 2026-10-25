@@ -64,44 +64,59 @@ function measure(step: StepNode): { width: number; height: number } {
   }
 }
 
+/** 读取随主题变化的 CSS token（浏览器里跑；测试/SSR 环境回退深色默认值） */
+export function cssVar(name: string, fallback: string): string {
+  if (typeof window === 'undefined' || typeof getComputedStyle !== 'function') return fallback;
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+
 /** 同一对端点出现多条不同 kind 的边时，保留语义最强的一条 */
 const EDGE_PRIORITY: Record<EdgeKind, number> = { verify: 4, 'read-edit': 3, contains: 2, seq: 1 };
 
 function toFlowEdge(from: string, to: string, kind: EdgeKind): Edge {
   const base = { id: `e-${from}-${to}`, source: from, target: to };
+  const strong = cssVar('--edge-strong', '#b3b3bd');
+  const mid = cssVar('--edge-mid', '#8f8f9a');
+  const labelBg = cssVar('--bg0', '#0a0a0a');
   switch (kind) {
     case 'read-edit':
       return {
         ...base,
         label: '读→改',
-        style: { stroke: '#b3b3bd', strokeWidth: 2.4 },
-        labelStyle: { fill: '#b3b3bd', fontSize: 11, fontWeight: 600 },
-        labelBgStyle: { fill: '#0a0a0a', fillOpacity: 0.92 },
+        style: { stroke: strong, strokeWidth: 2.4 },
+        labelStyle: { fill: strong, fontSize: 11, fontWeight: 600 },
+        labelBgStyle: { fill: labelBg, fillOpacity: 0.92 },
         labelBgPadding: [5, 3],
         labelBgBorderRadius: 3,
-        markerEnd: { type: MarkerType.ArrowClosed, width: 15, height: 15, color: '#b3b3bd' },
+        markerEnd: { type: MarkerType.ArrowClosed, width: 15, height: 15, color: strong },
       };
     case 'verify':
       return {
         ...base,
         label: '验证',
-        style: { stroke: '#8f8f9a', strokeWidth: 2.4, strokeDasharray: '8 5' },
-        labelStyle: { fill: '#8f8f9a', fontSize: 11, fontWeight: 600 },
-        labelBgStyle: { fill: '#0a0a0a', fillOpacity: 0.92 },
+        style: { stroke: mid, strokeWidth: 2.4, strokeDasharray: '8 5' },
+        labelStyle: { fill: mid, fontSize: 11, fontWeight: 600 },
+        labelBgStyle: { fill: labelBg, fillOpacity: 0.92 },
         labelBgPadding: [5, 3],
         labelBgBorderRadius: 3,
-        markerEnd: { type: MarkerType.ArrowClosed, width: 15, height: 15, color: '#8f8f9a' },
+        markerEnd: { type: MarkerType.ArrowClosed, width: 15, height: 15, color: mid },
       };
     case 'seq':
       return {
         ...base,
-        style: { stroke: '#4a4a52', strokeWidth: 1.6, strokeDasharray: '3 6' },
-        markerEnd: { type: MarkerType.ArrowClosed, width: 11, height: 11, color: '#4a4a52' },
+        style: { stroke: cssVar('--edge-seq', '#4a4a52'), strokeWidth: 1.6, strokeDasharray: '3 6' },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 11,
+          height: 11,
+          color: cssVar('--edge-seq', '#4a4a52'),
+        },
       };
     default: // contains
       return {
         ...base,
-        style: { stroke: '#2e2e33', strokeWidth: 1.3, strokeDasharray: '6 5' },
+        style: { stroke: cssVar('--edge-faint', '#2e2e33'), strokeWidth: 1.3, strokeDasharray: '6 5' },
       };
   }
 }

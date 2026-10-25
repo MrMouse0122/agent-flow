@@ -18,7 +18,7 @@ import {
 import type { Edge, NodeProps, NodeTypes } from '@xyflow/react';
 import { useEffect, useRef } from 'react';
 import type { Graph } from '@agent-flow/protocol';
-import { computeLayout, type FlowNode } from './layout';
+import { computeLayout, cssVar, type FlowNode } from './layout';
 
 interface CanvasProps {
   graph: Graph | null;
@@ -171,7 +171,7 @@ function CanvasInner({ graph, sessionKey, onSelectNode }: CanvasProps) {
       maxZoom={2.2}
       className="af-flow"
     >
-      <Background gap={24} size={1.1} color="#1d1d20" />
+      <Background gap={24} size={1.1} color={cssVar('--grid', '#1d1d20')} />
       <Controls showInteractive={false} />
     </ReactFlow>
   );
