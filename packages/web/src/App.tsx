@@ -8,6 +8,7 @@ import { DemoClient } from './demo';
 import DetailPanel from './DetailPanel';
 import { LiveClient, initialLiveState } from './live';
 import type { FlowClient, LiveState } from './live';
+import StoryView from './StoryView';
 import { useReplay } from './useReplay';
 import { formatRelative } from './util';
 
@@ -54,6 +55,7 @@ export default function App() {
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'live' | 'replay'>('live');
+  const [storyMode, setStoryMode] = useState(true);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = window.setInterval(() => setNow(Date.now()), 15_000);
@@ -111,6 +113,24 @@ export default function App() {
           </h1>
         </div>
         <div className="af-topbar-right">
+          {hasEvents && (
+            <div className="af-viewtoggle" role="group" aria-label="视图切换">
+              <button
+                type="button"
+                className={`af-btn ${storyMode ? 'af-btn-active' : ''}`}
+                onClick={() => setStoryMode(true)}
+              >
+                📖 故事线
+              </button>
+              <button
+                type="button"
+                className={`af-btn ${!storyMode ? 'af-btn-active' : ''}`}
+                onClick={() => setStoryMode(false)}
+              >
+                🕸 流程图
+              </button>
+            </div>
+          )}
           {hasEvents &&
             (viewMode === 'live' ? (
               currentSession!.status === 'live' ? (
@@ -229,12 +249,16 @@ export default function App() {
         <main className="af-canvas-wrap">
           {currentSession ? (
             <>
-              <Canvas
-                key={state.currentSessionId ?? 'none'}
-                graph={displayGraph}
-                sessionKey={state.currentSessionId ?? 'none'}
-                onSelectNode={setSelectedNodeId}
-              />
+              {storyMode ? (
+                <StoryView graph={displayGraph} onSelectNode={setSelectedNodeId} />
+              ) : (
+                <Canvas
+                  key={state.currentSessionId ?? 'none'}
+                  graph={displayGraph}
+                  sessionKey={state.currentSessionId ?? 'none'}
+                  onSelectNode={setSelectedNodeId}
+                />
+              )}
               {(!displayGraph || displayGraph.nodes.length === 0) && (
                 <div className="af-canvas-hint">
                   {viewMode === 'replay' && replay.index === 0

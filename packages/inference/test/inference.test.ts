@@ -128,4 +128,27 @@ describe('buildGraph — 边界用例', () => {
     expect(node(g, 'plan:0')!.status).toBe('pending');
     expect(node(g, 'plan:1')!.status).toBe('pending');
   });
+
+  it('skill 上报的 note 事件生成说明节点，why 优先采用 agent 原话', () => {
+    const g = buildGraph([
+      ev({ id: 'a', ts: 0, phase: 'user_prompt', title: '用户：修按钮', input: { prompt: '修按钮' } }),
+      ev({
+        id: 'b',
+        ts: 100,
+        phase: 'note',
+        title: '先读样式，定位按钮错位原因',
+        input: { why: '用户说按钮总是错位，先找到样式定义才能改' },
+      }),
+      ev({ id: 'c', ts: 200, phase: 'tool_start', tool: 'Read', title: '读取 login.css', files: ['login.css'], input: { file_path: 'login.css' } }),
+      ev({ id: 'd', ts: 300, phase: 'tool_end', tool: 'Read', title: '读取 login.css', files: ['login.css'], status: 'ok' }),
+    ]);
+    const note = g.nodes.find((n) => n.kind === 'note')!;
+    expect(note.label).toBe('先读样式，定位按钮错位原因');
+    // note 的 why：用户需求 + agent 原话（tool-input 来源）
+    expect(note.why.map((w) => w.source)).toEqual(['user', 'tool-input']);
+    expect(note.why[1]!.text).toContain('先找到样式定义');
+    // note 在叙事链上：prompt → note（contains），note → Read（seq 兜底）
+    expect(edgeKinds(g, 'n:b')).toContain('contains');
+    expect(edgeKinds(g, 'n:c')).toContain('seq');
+  });
 });

@@ -12,6 +12,7 @@ const KIND_LABEL: Record<string, string> = {
   'plan-item': '计划条目',
   tool: '工具',
   'turn-end': '回合结束',
+  note: 'AI 说明',
 };
 
 const STATUS_LABEL: Record<string, string> = {

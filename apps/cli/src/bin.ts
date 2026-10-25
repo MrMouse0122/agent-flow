@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { demoSession, type AgentEvent } from '@agent-flow/protocol';
@@ -114,6 +114,23 @@ async function cmdUninstall(): Promise<void> {
   console.log('已移除 AgentFlow 的 ZCode hooks（你自己的 hooks 未动）。');
 }
 
+/** 把「实时上报」skill 装进 ~/.zcode/skills/，让 ZCode 会话自己叙述每一步 */
+async function cmdSkill(args: string[]): Promise<void> {
+  const src = join(import.meta.dirname, '../../../adapters/skill/SKILL.md');
+  const destDir = join(homedir(), '.zcode', 'skills', 'agent-flow');
+  if (args.includes('--remove')) {
+    rmSync(destDir, { recursive: true, force: true });
+    console.log(`已移除 AgentFlow skill（${destDir}）。`);
+    return;
+  }
+  if (!existsSync(src)) throw new Error(`找不到 skill 源文件：${src}`);
+  mkdirSync(destDir, { recursive: true });
+  copyFileSync(src, join(destDir, 'SKILL.md'));
+  console.log(`已安装 AgentFlow skill → ${destDir}`);
+  console.log('之后新开的 ZCode 会话干活时，会自动把每一步「做了什么 / 为什么」上报到面板（server 不在线则自动跳过）。');
+  console.log('卸载：npx tsx apps/cli/src/bin.ts skill --remove');
+}
+
 function cmdOpen(): void {
   openBrowser(URL);
 }
@@ -133,6 +150,9 @@ async function main(): Promise<void> {
     case 'uninstall':
       await cmdUninstall();
       break;
+    case 'skill':
+      await cmdSkill(args);
+      break;
     case 'open':
       cmdOpen();
       break;
@@ -143,6 +163,7 @@ async function main(): Promise<void> {
   agent-flow start [--no-open] [--watch <目录>]   启动守护进程（server + codex/generic 监视）并打开面板
   agent-flow demo [--speed=4]                     推送一段模拟会话，立即看到实时出图效果
   agent-flow install / uninstall                  注册 / 移除 ZCode hooks
+  agent-flow skill [--remove]                     安装 / 移除「实时上报」skill（AI 自己叙述每一步）
   agent-flow open                                 打开面板
 `);
       process.exit(cmd ? 1 : 0);

@@ -45,7 +45,7 @@ export interface WhySource {
   source: 'user' | 'plan' | 'tool-input' | 'unknown';
 }
 
-export type StepKind = 'prompt' | 'plan-item' | 'tool' | 'turn-end';
+export type StepKind = 'prompt' | 'plan-item' | 'tool' | 'turn-end' | 'note';
 export type StepStatus = 'running' | 'ok' | 'error' | 'pending';
 
 export interface StepNode {

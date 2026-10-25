@@ -1114,6 +1114,216 @@ body {
   }
 }
 
+/* ---------- 故事线视图 ---------- */
+
+.af-viewtoggle {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.af-viewtoggle .af-btn {
+  border: none;
+  border-radius: 0;
+  padding: 5px 12px;
+}
+
+.af-viewtoggle .af-btn + .af-btn {
+  border-left: 1px solid var(--line);
+}
+
+.af-btn-active {
+  background: var(--blue-dim) !important;
+  color: var(--blue) !important;
+  border-color: rgba(79, 140, 255, 0.4) !important;
+}
+
+.af-story {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  padding: 26px 28px 40px;
+}
+
+.af-story-summary {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  max-width: 860px;
+  margin: 0 auto 18px;
+  padding: 14px 18px;
+  background: linear-gradient(160deg, #16202f 0%, #12172233 100%), var(--bg2);
+  border: 1px solid #2c3a58;
+  border-left: 3px solid var(--blue);
+  border-radius: 10px;
+}
+
+.af-story-summary-icon {
+  flex: none;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.af-story-summary p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.8;
+  color: var(--text);
+}
+
+.af-story-list {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: 860px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.af-story-row {
+  position: relative;
+}
+
+/* 计划分隔标题 */
+.af-story-plan {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 4px;
+  padding: 0 4px;
+}
+
+.af-story-plan-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #d9d3f5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 步骤行 */
+.af-story-btn {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  appearance: none;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.af-story-btn:hover {
+  background: var(--bg3);
+  border-color: #36405c;
+}
+
+.af-story-error .af-story-btn {
+  border-color: rgba(248, 113, 113, 0.55);
+  background: linear-gradient(0deg, rgba(248, 113, 113, 0.06), rgba(248, 113, 113, 0.06)), var(--bg2);
+}
+
+.af-story-running .af-story-btn {
+  border-color: rgba(79, 140, 255, 0.7);
+}
+
+.af-story-remediation .af-story-btn {
+  border-left: 3px solid var(--amber);
+}
+
+.af-story-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+
+.af-sd-ok {
+  background: var(--green);
+}
+
+.af-sd-error {
+  background: var(--red);
+  box-shadow: 0 0 8px rgba(248, 113, 113, 0.6);
+}
+
+.af-sd-running {
+  background: var(--blue);
+  animation: af-pulse 1.4s ease-in-out infinite;
+}
+
+.af-story-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.af-story-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.af-story-tool {
+  flex: none;
+  font-size: 11px;
+  color: var(--cyan);
+}
+
+.af-story-title {
+  min-width: 0;
+  font-size: 14.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.af-story-time {
+  margin-left: auto;
+  flex: none;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.af-story-why {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.af-badge-remediation {
+  color: var(--amber);
+  border-color: rgba(240, 179, 85, 0.5);
+  background: rgba(240, 179, 85, 0.12);
+}
+
+.af-kind-note {
+  color: #c8b8f5;
+  border-color: rgba(167, 139, 250, 0.4);
+  background: var(--purple-dim);
+}
+
 /* ---------- 滚动条 ---------- */
 
 ::-webkit-scrollbar {

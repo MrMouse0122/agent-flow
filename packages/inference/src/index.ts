@@ -20,7 +20,9 @@ function promptTextOf(ev: AgentEvent | undefined): string | undefined {
 }
 
 function inputSummary(ev: AgentEvent): string | undefined {
-  const inp = ev.input as { command?: unknown } | undefined;
+  const inp = ev.input as { command?: unknown; why?: unknown } | undefined;
+  // agent（skill 上报）自带的 why 是最优解释，优先展示
+  if (typeof inp?.why === 'string' && inp.why) return trunc(inp.why, 120);
   if (typeof inp?.command === 'string') return trunc(inp.command, 100);
   if (ev.input === undefined) return undefined;
   try {
@@ -154,9 +156,23 @@ export function buildGraph(input: AgentEvent[]): Graph {
       eventIds: [e.id],
       ts: e.ts,
     }));
-  nodes.push(...toolNodes, ...turnNodes);
+  // note 事件：skill 上报的 agent 原话说明（最有人味的节点）
+  const noteNodes: StepNode[] = events
+    .filter((e) => e.phase === 'note' && e.title)
+    .map((e) => ({
+      id: `n:${e.id}`,
+      label: e.title,
+      kind: 'note' as const,
+      status: 'ok' as const,
+      why: [],
+      eventIds: [e.id],
+      ts: e.ts,
+    }));
+  nodes.push(...toolNodes, ...turnNodes, ...noteNodes);
 
-  const steps = [...toolNodes, ...turnNodes].sort((a, b) => a.ts - b.ts || (a.id < b.id ? -1 : 1));
+  const steps = [...toolNodes, ...turnNodes, ...noteNodes].sort(
+    (a, b) => a.ts - b.ts || (a.id < b.id ? -1 : 1),
+  );
 
   // ---- 步骤 → 计划条目归属 ----
   // 同一快照（startTs 全相同）的条目按顺序等分后续步骤；
@@ -188,7 +204,7 @@ export function buildGraph(input: AgentEvent[]): Graph {
 
   // ---- why ----
   const planById = new Map(planItems.map((p) => [p.node.id, p.node]));
-  for (const s of toolNodes) {
+  for (const s of [...toolNodes, ...noteNodes]) {
     const head = events.find((e) => e.id === s.eventIds[0]) ?? events.find((e) => s.eventIds.includes(e.id));
     if (promptText) s.why.push({ text: promptText, source: 'user' });
     const parent = s.parentPlanItemId ? planById.get(s.parentPlanItemId) : undefined;
@@ -239,11 +255,12 @@ export function buildGraph(input: AgentEvent[]): Graph {
     prevVerifyTs = v.ts;
   }
 
-  // 4. seq 兜底：无入边的工具节点连到前一个工具节点（同计划组优先）
+  // 4. seq 兜底：无入边的工具/说明节点连到前一个（同计划组优先）
+  const seqChain = [...toolNodes, ...noteNodes].sort((a, b) => a.ts - b.ts);
   const hasIncoming = (id: string) => edges.some((ed) => ed.to === id);
-  for (const t of toolByTs) {
+  for (const t of seqChain) {
     if (hasIncoming(t.id)) continue;
-    const before = toolByTs.filter((r) => r.ts < t.ts);
+    const before = seqChain.filter((r) => r.ts < t.ts);
     const p =
       before.filter((r) => r.parentPlanItemId && r.parentPlanItemId === t.parentPlanItemId).at(-1) ??
       before.at(-1);
