@@ -42,7 +42,7 @@ body {
   background: var(--bg0);
   color: var(--text);
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: 13.5px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
@@ -520,13 +520,13 @@ body {
 }
 
 .af-handle {
-  width: 6px !important;
-  height: 6px !important;
+  width: 7px !important;
+  height: 7px !important;
   min-width: 0;
   min-height: 0;
   border: none !important;
   border-radius: 50%;
-  background: #4b5670 !important;
+  background: #74829f !important;
 }
 
 /* ---------- 画布节点 ---------- */
@@ -537,8 +537,8 @@ body {
   overflow: hidden;
   background: var(--bg2);
   border: 1px solid var(--line);
-  border-radius: 8px;
-  font-size: 12px;
+  border-radius: 9px;
+  font-size: 14px;
   color: var(--text);
   cursor: grab;
   user-select: none;
@@ -555,6 +555,8 @@ body {
 
 .af-node-label {
   min-width: 0;
+  font-weight: 500;
+  letter-spacing: 0.2px;
 }
 
 .af-ellipsis {
@@ -576,17 +578,18 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
-  background: linear-gradient(160deg, #17202f 0%, #131824 100%);
-  border-color: #2c3a58;
+  padding: 10px 13px;
+  background: linear-gradient(160deg, #182233 0%, #131a28 100%);
+  border-color: #33436a;
   border-left: 3px solid var(--blue);
   font-weight: 600;
+  font-size: 14.5px;
 }
 
 .af-prompt-icon {
   flex: none;
   color: var(--blue);
-  font-size: 14px;
+  font-size: 16px;
 }
 
 /* 工具节点 */
@@ -594,8 +597,8 @@ body {
 .af-tool {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px 10px;
+  gap: 7px;
+  padding: 9px 12px;
 }
 
 .af-tool-top {
@@ -607,8 +610,8 @@ body {
 
 .af-status-dot {
   flex: none;
-  width: 7px;
-  height: 7px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: var(--text-faint);
 }
@@ -643,26 +646,27 @@ body {
 .af-plan {
   display: flex;
   flex-direction: column;
-  background: rgba(167, 139, 250, 0.045);
-  border: 1px dashed #45406a;
-  border-radius: 10px;
+  background: rgba(167, 139, 250, 0.07);
+  border: 1px dashed #5c5586;
+  border-radius: 11px;
 }
 
 .af-plan-header {
   flex: none;
-  height: 30px;
+  height: 34px;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 10px;
+  padding: 0 11px;
   cursor: grab;
-  border-bottom: 1px dashed rgba(69, 64, 106, 0.5);
+  border-bottom: 1px dashed rgba(92, 85, 134, 0.6);
 }
 
 .af-plan-title {
   min-width: 0;
-  font-size: 12px;
-  color: var(--text-dim);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #cfc8ee;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -674,11 +678,12 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
+  padding: 9px 15px;
   border-radius: 999px;
   background: var(--green-dim);
   border-color: rgba(62, 207, 142, 0.4);
-  color: #bfe9d7;
+  color: #c8f0dd;
+  font-size: 14px;
 }
 
 .af-turnend-check {
@@ -875,15 +880,15 @@ body {
   flex: none;
   display: inline-flex;
   align-items: center;
-  font-size: 10px;
+  font-size: 11.5px;
   font-weight: 600;
   line-height: 1;
-  padding: 3px 7px;
+  padding: 3px 8px;
   border-radius: 4px;
   border: 1px solid var(--line);
   color: var(--text-dim);
   background: var(--bg3);
-  max-width: 120px;
+  max-width: 130px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

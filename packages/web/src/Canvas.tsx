@@ -107,7 +107,7 @@ const nodeTypes: NodeTypes = {
   'af-turnend': TurnEndNode,
 };
 
-const FIT_OPTIONS = { padding: 0.18, maxZoom: 1.05, duration: 350 };
+const FIT_OPTIONS = { padding: 0.12, maxZoom: 1.15, duration: 400 };
 
 function CanvasInner({ graph, sessionKey, onSelectNode }: CanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
@@ -139,10 +139,17 @@ function CanvasInner({ graph, sessionKey, onSelectNode }: CanvasProps) {
         if (seq !== layoutSeqRef.current) return; // 已有更新的布局请求
         setNodes(out.nodes);
         setEdges(out.edges);
+        const freshCount = out.nodes.filter((n) => n.data.fresh).length;
         prevIdsRef.current = new Set(out.nodes.map((n) => n.id));
-        if (fittedSessionRef.current !== sessionKey) {
+        // 首次布局或出现了新节点时重新 FitView。
+        // fitView 必须等 React 真正把节点渲染出来后再算边界，
+        // 双重等待（rAF + timeout）避免「内容挤在角落」的错位。
+        const needFit = fittedSessionRef.current !== sessionKey || freshCount > 0;
+        if (needFit) {
           fittedSessionRef.current = sessionKey;
-          window.setTimeout(() => void fitView(FIT_OPTIONS), 80);
+          requestAnimationFrame(() => {
+            window.setTimeout(() => void fitView(FIT_OPTIONS), 200);
+          });
         }
       });
     }, 120);

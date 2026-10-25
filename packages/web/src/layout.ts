@@ -20,9 +20,9 @@ export interface LayoutResult {
   edges: Edge[];
 }
 
-/** 分组节点：标题条高度 + 内边距 */
-const GROUP_HEADER = 30;
-const GROUP_PADDING = 12;
+/** 分组节点：标题条高度 + 内边距（与 styles.css 的 .af-plan-header 保持一致） */
+const GROUP_HEADER = 34;
+const GROUP_PADDING = 14;
 
 const elk = new ELK();
 
@@ -39,27 +39,27 @@ export function nodeTypeOf(step: StepNode): string {
   }
 }
 
-/** 粗略文字宽度估算（px @12px 字号），用于给 elk 提供节点尺寸 */
+/** 粗略文字宽度估算（px @14px 字号），用于给 elk 提供节点尺寸 */
 function estimateTextWidth(text: string): number {
   let w = 0;
-  for (const ch of text) w += ch.codePointAt(0)! > 0x2e7f ? 12.5 : 7.2;
+  for (const ch of text) w += ch.codePointAt(0)! > 0x2e7f ? 14.5 : 8.2;
   return w;
 }
 
 function measure(step: StepNode): { width: number; height: number } {
   switch (step.kind) {
     case 'prompt':
-      return { width: 300, height: 58 };
+      return { width: 360, height: 68 };
     case 'turn-end':
-      return { width: 240, height: 44 };
+      return { width: 280, height: 54 };
     case 'plan-item':
       // 空分组的最小尺寸；有子节点时 elk 会按内容撑开
-      return { width: 220, height: GROUP_HEADER + 2 * GROUP_PADDING + 34 };
+      return { width: 260, height: GROUP_HEADER + 2 * GROUP_PADDING + 40 };
     default: {
       const label = estimateTextWidth(step.label);
       const tool = estimateTextWidth(step.tool ?? '');
-      const width = Math.min(320, Math.max(190, Math.ceil(Math.max(label + 34, tool + 52))));
-      return { width, height: 52 };
+      const width = Math.min(380, Math.max(230, Math.ceil(Math.max(label + 42, tool + 62))));
+      return { width, height: 64 };
     }
   }
 }
@@ -73,30 +73,35 @@ function toFlowEdge(from: string, to: string, kind: EdgeKind): Edge {
     case 'read-edit':
       return {
         ...base,
-        style: { stroke: '#5f8dff', strokeWidth: 2 },
-        markerEnd: { type: MarkerType.ArrowClosed, width: 13, height: 13, color: '#5f8dff' },
+        label: '读→改',
+        style: { stroke: '#6f9eff', strokeWidth: 2.4 },
+        labelStyle: { fill: '#6f9eff', fontSize: 11, fontWeight: 600 },
+        labelBgStyle: { fill: '#11141c', fillOpacity: 0.92 },
+        labelBgPadding: [5, 3],
+        labelBgBorderRadius: 3,
+        markerEnd: { type: MarkerType.ArrowClosed, width: 15, height: 15, color: '#6f9eff' },
       };
     case 'verify':
       return {
         ...base,
         label: '验证',
-        style: { stroke: '#56d4c6', strokeWidth: 2, strokeDasharray: '7 5' },
-        labelStyle: { fill: '#56d4c6', fontSize: 10, fontWeight: 600 },
-        labelBgStyle: { fill: '#11141c', fillOpacity: 0.9 },
+        style: { stroke: '#5fe0d0', strokeWidth: 2.4, strokeDasharray: '8 5' },
+        labelStyle: { fill: '#5fe0d0', fontSize: 11, fontWeight: 600 },
+        labelBgStyle: { fill: '#11141c', fillOpacity: 0.92 },
         labelBgPadding: [5, 3],
         labelBgBorderRadius: 3,
-        markerEnd: { type: MarkerType.ArrowClosed, width: 13, height: 13, color: '#56d4c6' },
+        markerEnd: { type: MarkerType.ArrowClosed, width: 15, height: 15, color: '#5fe0d0' },
       };
     case 'seq':
       return {
         ...base,
-        style: { stroke: '#3a4257', strokeWidth: 1.2, strokeDasharray: '2 7' },
-        markerEnd: { type: MarkerType.ArrowClosed, width: 10, height: 10, color: '#3a4257' },
+        style: { stroke: '#5b6683', strokeWidth: 1.6, strokeDasharray: '3 6' },
+        markerEnd: { type: MarkerType.ArrowClosed, width: 11, height: 11, color: '#5b6683' },
       };
     default: // contains
       return {
         ...base,
-        style: { stroke: '#3d4560', strokeWidth: 1, strokeDasharray: '5 5' },
+        style: { stroke: '#556085', strokeWidth: 1.3, strokeDasharray: '6 5' },
       };
   }
 }
@@ -180,9 +185,9 @@ export async function computeLayout(graph: Graph, prevIds: ReadonlySet<string>):
       'elk.algorithm': 'layered',
       'elk.direction': 'DOWN',
       'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
-      'elk.layerSpacing': '64',
-      'elk.nodeSpacing': '26',
-      'elk.spacing.edgeNode': '28',
+      'elk.layerSpacing': '72',
+      'elk.nodeSpacing': '30',
+      'elk.spacing.edgeNode': '30',
       'elk.padding': '[top=24,left=24,bottom=24,right=24]',
     },
     children: elkChildren,
