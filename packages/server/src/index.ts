@@ -22,14 +22,17 @@ export interface AppContext {
   close: () => Promise<void>;
 }
 
+// 所有文本类型显式声明 charset=utf-8：部分国产/兼容内核浏览器在响应头缺 charset 时
+// 会按系统本地编码（GBK）解码 JS/CSS，导致界面中文全部乱码（å·²è¿žæŽ¥ 这类）
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript',
-  '.css': 'text/css',
-  '.svg': 'image/svg+xml',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.svg': 'image/svg+xml; charset=utf-8',
   '.png': 'image/png',
-  '.json': 'application/json',
-  '.map': 'application/json',
+  '.jpg': 'image/jpeg',
+  '.json': 'application/json; charset=utf-8',
+  '.map': 'application/json; charset=utf-8',
   '.ico': 'image/x-icon',
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
