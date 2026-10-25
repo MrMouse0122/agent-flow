@@ -173,6 +173,8 @@ export async function computeLayout(graph: Graph, prevIds: ReadonlySet<string>):
       childrenOf.set(n.parentPlanItemId, arr);
     }
   }
+  // 组内子节点按时间排序（顺序即执行顺序）
+  for (const arr of childrenOf.values()) arr.sort((a, b) => a.ts - b.ts);
 
   const groupPadding = `[top=${GROUP_HEADER + GROUP_PADDING},left=${GROUP_PADDING},bottom=${GROUP_PADDING},right=${GROUP_PADDING}]`;
 
@@ -211,6 +213,24 @@ export async function computeLayout(graph: Graph, prevIds: ReadonlySet<string>):
     }
   }
 
+  // 排序隐形边：只给 elk 分层用，React Flow 不渲染。
+  // 作用是强制"纵向生长"——分组从上往下逐个排、组内节点竖排，
+  // 否则 layered 会把兄弟节点横铺成一整行，fitView 后整图被压扁看不清。
+  const orderEdges: Array<{ id: string; sources: string[]; targets: string[] }> = [];
+  const plans = graph.nodes.filter((n) => n.kind === 'plan-item').sort((a, b) => a.ts - b.ts);
+  for (let i = 0; i + 1 < plans.length; i++) {
+    orderEdges.push({ id: `__order-p${i}`, sources: [plans[i]!.id], targets: [plans[i + 1]!.id] });
+  }
+  for (const [pid, children] of childrenOf) {
+    for (let i = 0; i + 1 < children.length; i++) {
+      orderEdges.push({
+        id: `__order-${pid}-${i}`,
+        sources: [children[i]!.id],
+        targets: [children[i + 1]!.id],
+      });
+    }
+  }
+
   const root: ElkNode = {
     id: 'root',
     layoutOptions: {
@@ -224,11 +244,14 @@ export async function computeLayout(graph: Graph, prevIds: ReadonlySet<string>):
       'elk.padding': '[top=24,left=24,bottom=24,right=24]',
     },
     children: elkChildren,
-    edges: [...edgeMap.values()].map((e) => ({
-      id: `e-${e.from}-${e.to}`,
-      sources: [e.from],
-      targets: [e.to],
-    })),
+    edges: [
+      ...[...edgeMap.values()].map((e) => ({
+        id: `e-${e.from}-${e.to}`,
+        sources: [e.from],
+        targets: [e.to],
+      })),
+      ...orderEdges,
+    ],
   };
 
   let out: ElkNode;

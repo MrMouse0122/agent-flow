@@ -16,6 +16,7 @@ import {
   useEdgesState,
   useNodesState,
   useReactFlow,
+  useStore,
 } from '@xyflow/react';
 import type { Edge, NodeProps, NodeTypes } from '@xyflow/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -224,9 +225,11 @@ function CanvasInner({ graph, sessionKey, selectedNodeId, onSelectNode }: Canvas
   }, [graph, sessionKey, setNodes, setEdges, fitView]);
 
   // 聚焦：悬停优先，其次选中（详情面板打开时）。聚焦点及其邻边保持醒目，其余淡出。
-  // 边处理管线：类型过滤 → 并行线错开出入锚点 → 聚焦淡出。
+  // 画布缩得太小（<0.45）时聚焦淡出没有意义还像"全图消失"，自动停用。
+  const zoomedOut = useStore((s) => s.transform[2] < 0.45);
   const focusId = hoverId ?? selectedNodeId ?? null;
   const displayEdges = useMemo(() => {
+    if (zoomedOut) return edges;
     const outCount = new Map<string, number>();
     const inCount = new Map<string, number>();
     const kept: Edge[] = [];
@@ -250,10 +253,10 @@ function CanvasInner({ graph, sessionKey, selectedNodeId, onSelectNode }: Canvas
         animated: on,
       };
     });
-  }, [edges, focusId, visibleKinds]);
+  }, [edges, focusId, visibleKinds, zoomedOut]);
 
   const displayNodes = useMemo(() => {
-    if (!focusId) return nodes;
+    if (!focusId || zoomedOut) return nodes;
     const related = new Set<string>([focusId]);
     for (const e of edges) {
       if (e.source === focusId) related.add(e.target);
@@ -263,7 +266,7 @@ function CanvasInner({ graph, sessionKey, selectedNodeId, onSelectNode }: Canvas
       ...n,
       style: { ...n.style, opacity: related.has(n.id) ? 1 : 0.35 },
     }));
-  }, [nodes, edges, focusId]);
+  }, [nodes, edges, focusId, zoomedOut]);
 
   return (
     <ReactFlow
