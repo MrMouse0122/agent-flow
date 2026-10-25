@@ -62,7 +62,7 @@ export default function DetailPanel({ step, events, onClose }: DetailPanelProps)
               </h2>
             </div>
             <button type="button" className="af-icon-btn" onClick={onClose} aria-label="关闭详情">
-              ✕
+              ×
             </button>
           </header>
 

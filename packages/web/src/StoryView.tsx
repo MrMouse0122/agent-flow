@@ -29,13 +29,11 @@ export default function StoryView({ graph, events, onSelectNode }: StoryViewProp
   return (
     <div className="af-story">
       <div className="af-story-summary">
-        <span className="af-story-summary-icon" aria-hidden>
-          📖
-        </span>
+        <span className="af-story-summary-mark">任务回顾</span>
         <div>
           <p>{story.summary}</p>
           <p className="af-story-legend">
-            每一步从上到下按时间排列：↑ 与上一步的联系 · ↳ 为什么这么做 · ● 这一步的结果（点击任意步骤看完整详情）
+            每一步从上到下按时间排列：「联系」是与上一步的关系，「原因」是为什么这么做，「结果」是这一步的产出。点击任意步骤可看完整详情。
           </p>
         </div>
       </div>
@@ -78,17 +76,17 @@ export default function StoryView({ graph, events, onSelectNode }: StoryViewProp
                   </span>
                   {b.connect && (
                     <span className="af-story-connect" title={b.connect}>
-                      ↑ {b.connect}
+                      联系：{b.connect}
                     </span>
                   )}
                   {why && (
                     <span className="af-story-why" title={why.text}>
-                      ↳ 原因：{why.text}
+                      原因：{why.text}
                     </span>
                   )}
                   {b.result && (
                     <span className={`af-story-result ${b.step.status === 'error' ? 'af-story-result-error' : ''}`}>
-                      ● 结果：{b.result}
+                      结果：{b.result}
                     </span>
                   )}
                 </span>

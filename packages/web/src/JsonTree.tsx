@@ -33,7 +33,7 @@ function JsonBranch({ name, value, depth }: { name?: string; value: object; dept
   return (
     <div className="af-json-branch">
       <button type="button" className="af-json-toggle" onClick={() => setOpen((o) => !o)}>
-        <span className={`af-json-chevron ${open ? 'af-json-chevron-open' : ''}`}>▸</span>
+        <span className={`af-json-chevron ${open ? 'af-json-chevron-open' : ''}`} aria-hidden />
         {name !== undefined && <span className="af-json-key">{name}: </span>}
         <span className="af-json-summary">{open ? (isArray ? `[${entries.length}]` : `{${entries.length}}`) : summary}</span>
       </button>

@@ -134,14 +134,14 @@ export default function App() {
                 className={`af-btn ${storyMode ? 'af-btn-active' : ''}`}
                 onClick={() => setStoryMode(true)}
               >
-                📖 故事线
+                故事线
               </button>
               <button
                 type="button"
                 className={`af-btn ${!storyMode ? 'af-btn-active' : ''}`}
                 onClick={() => setStoryMode(false)}
               >
-                🕸 流程图
+                流程图
               </button>
             </div>
           )}
@@ -149,11 +149,11 @@ export default function App() {
             (viewMode === 'live' ? (
               currentSession!.status === 'live' ? (
                 <button type="button" className="af-btn" onClick={() => setViewMode('replay')}>
-                  ⏸ 暂停实时
+                  暂停实时
                 </button>
               ) : (
                 <button type="button" className="af-btn" onClick={() => setViewMode('replay')}>
-                  ▶ 回放此会话
+                  回放此会话
                 </button>
               )
             ) : (
@@ -163,9 +163,9 @@ export default function App() {
                   className="af-btn af-btn-icon"
                   onClick={replay.toggle}
                   title={replay.playing ? '暂停回放' : '播放回放'}
-                >
-                  {replay.playing ? '⏸' : '▶'}
-                </button>
+                    >
+                      {replay.playing ? '暂停' : '播放'}
+                    </button>
                 <input
                   className="af-slider"
                   type="range"
@@ -248,7 +248,7 @@ export default function App() {
               className="af-btn af-btn-ghost"
               onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
             >
-              {theme === 'dark' ? '☀ 切换浅色' : '🌙 切换深色'}
+              {theme === 'dark' ? '切换浅色' : '切换深色'}
             </button>
             {usingDemo ? (
               <>
@@ -284,16 +284,14 @@ export default function App() {
               {(!displayGraph || displayGraph.nodes.length === 0) && (
                 <div className="af-canvas-hint">
                   {viewMode === 'replay' && replay.index === 0
-                    ? '拖动滑杆或按 ▶ 开始回放'
+                    ? '拖动滑杆或按「播放」开始回放'
                     : '等待事件流入…'}
                 </div>
               )}
             </>
           ) : (
             <div className="af-canvas-placeholder">
-              <div className="af-placeholder-mark" aria-hidden>
-                ◆
-              </div>
+              <span className="af-placeholder-mark" aria-hidden />
               <p>选择左侧会话，或从任一已接入的 Agent 客户端发起对话</p>
               {showDemoButton && (
                 <button type="button" className="af-btn af-btn-demo" onClick={startDemo}>

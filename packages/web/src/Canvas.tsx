@@ -47,8 +47,8 @@ function PromptNode({ data, selected }: NodeProps<FlowNode>) {
     <div className={`af-node af-prompt ${fresh ? 'af-fresh' : ''} ${selected ? 'af-selected' : ''}`}>
       <Handle type="target" id="t0" position={Position.Top} className="af-handle af-h-t0" />
       <Handle type="target" id="t1" position={Position.Top} className="af-handle af-h-t1" />
-      <div className="af-prompt-icon" aria-hidden>
-        ✦
+      <div className="af-prompt-mark" aria-hidden>
+        问
       </div>
       <div className="af-node-label af-clamp2" title={step.label}>
         {step.label}
@@ -100,7 +100,7 @@ function ToolNode({ data, selected }: NodeProps<FlowNode>) {
       </div>
       {why && (
         <div className="af-node-why af-ellipsis" title={why}>
-          ↳ {why}
+          {why}
         </div>
       )}
       <Handle type="source" id="s0" position={Position.Bottom} className="af-handle af-h-s0" />
@@ -124,7 +124,7 @@ function NoteNode({ data, selected }: NodeProps<FlowNode>) {
       </div>
       {why && (
         <div className="af-node-why af-ellipsis" title={why}>
-          ↳ {why}
+          {why}
         </div>
       )}
       <Handle type="source" id="s0" position={Position.Bottom} className="af-handle af-h-s0" />
