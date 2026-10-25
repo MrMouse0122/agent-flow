@@ -9,6 +9,7 @@ import {
   Background,
   Controls,
   Handle,
+  Panel,
   Position,
   ReactFlow,
   ReactFlowProvider,
@@ -44,14 +45,16 @@ function PromptNode({ data, selected }: NodeProps<FlowNode>) {
   const { step, fresh } = data;
   return (
     <div className={`af-node af-prompt ${fresh ? 'af-fresh' : ''} ${selected ? 'af-selected' : ''}`}>
-      <Handle type="target" position={Position.Top} className="af-handle" />
+      <Handle type="target" id="t0" position={Position.Top} className="af-handle af-h-t0" />
+      <Handle type="target" id="t1" position={Position.Top} className="af-handle af-h-t1" />
       <div className="af-prompt-icon" aria-hidden>
         ✦
       </div>
       <div className="af-node-label af-clamp2" title={step.label}>
         {step.label}
       </div>
-      <Handle type="source" position={Position.Bottom} className="af-handle" />
+      <Handle type="source" id="s0" position={Position.Bottom} className="af-handle af-h-s0" />
+      <Handle type="source" id="s1" position={Position.Bottom} className="af-handle af-h-s1" />
     </div>
   );
 }
@@ -60,7 +63,8 @@ function PlanNode({ data, selected }: NodeProps<FlowNode>) {
   const { step, fresh, planIndex, actionCount } = data;
   return (
     <div className={`af-node af-plan ${fresh ? 'af-fresh' : ''} ${selected ? 'af-selected' : ''}`}>
-      <Handle type="target" position={Position.Top} className="af-handle" />
+      <Handle type="target" id="t0" position={Position.Top} className="af-handle af-h-t0" />
+      <Handle type="target" id="t1" position={Position.Top} className="af-handle af-h-t1" />
       <div className="af-plan-header">
         <span className="af-badge af-badge-plan">{typeof planIndex === 'number' ? `第 ${planIndex + 1} 步` : '计划'}</span>
         <span className="af-plan-title" title={step.label}>
@@ -70,7 +74,8 @@ function PlanNode({ data, selected }: NodeProps<FlowNode>) {
           <span className="af-plan-meta">{actionCount} 个动作</span>
         )}
       </div>
-      <Handle type="source" position={Position.Bottom} className="af-handle" />
+      <Handle type="source" id="s0" position={Position.Bottom} className="af-handle af-h-s0" />
+      <Handle type="source" id="s1" position={Position.Bottom} className="af-handle af-h-s1" />
     </div>
   );
 }
@@ -82,7 +87,8 @@ function ToolNode({ data, selected }: NodeProps<FlowNode>) {
     <div
       className={`af-node af-tool ${statusClass(step)} ${fresh ? 'af-fresh' : ''} ${selected ? 'af-selected' : ''}`}
     >
-      <Handle type="target" position={Position.Top} className="af-handle" />
+      <Handle type="target" id="t0" position={Position.Top} className="af-handle af-h-t0" />
+      <Handle type="target" id="t1" position={Position.Top} className="af-handle af-h-t1" />
       <div className="af-tool-top">
         <span className="af-badge af-badge-tool" title={step.tool}>
           {step.tool ?? '工具'}
@@ -97,7 +103,8 @@ function ToolNode({ data, selected }: NodeProps<FlowNode>) {
           ↳ {why}
         </div>
       )}
-      <Handle type="source" position={Position.Bottom} className="af-handle" />
+      <Handle type="source" id="s0" position={Position.Bottom} className="af-handle af-h-s0" />
+      <Handle type="source" id="s1" position={Position.Bottom} className="af-handle af-h-s1" />
     </div>
   );
 }
@@ -107,7 +114,8 @@ function NoteNode({ data, selected }: NodeProps<FlowNode>) {
   const why = whyText(step);
   return (
     <div className={`af-node af-note ${fresh ? 'af-fresh' : ''} ${selected ? 'af-selected' : ''}`}>
-      <Handle type="target" position={Position.Top} className="af-handle" />
+      <Handle type="target" id="t0" position={Position.Top} className="af-handle af-h-t0" />
+      <Handle type="target" id="t1" position={Position.Top} className="af-handle af-h-t1" />
       <div className="af-tool-top">
         <span className="af-badge af-kind-note">AI 说明</span>
       </div>
@@ -119,7 +127,8 @@ function NoteNode({ data, selected }: NodeProps<FlowNode>) {
           ↳ {why}
         </div>
       )}
-      <Handle type="source" position={Position.Bottom} className="af-handle" />
+      <Handle type="source" id="s0" position={Position.Bottom} className="af-handle af-h-s0" />
+      <Handle type="source" id="s1" position={Position.Bottom} className="af-handle af-h-s1" />
     </div>
   );
 }
@@ -128,14 +137,16 @@ function TurnEndNode({ data, selected }: NodeProps<FlowNode>) {
   const { step, fresh } = data;
   return (
     <div className={`af-node af-turnend ${statusClass(step)} ${fresh ? 'af-fresh' : ''} ${selected ? 'af-selected' : ''}`}>
-      <Handle type="target" position={Position.Top} className="af-handle" />
+      <Handle type="target" id="t0" position={Position.Top} className="af-handle af-h-t0" />
+      <Handle type="target" id="t1" position={Position.Top} className="af-handle af-h-t1" />
       <span className="af-turnend-check" aria-hidden>
         ✓
       </span>
       <span className="af-node-label af-ellipsis" title={step.label}>
         {step.label}
       </span>
-      <Handle type="source" position={Position.Bottom} className="af-handle" />
+      <Handle type="source" id="s0" position={Position.Bottom} className="af-handle af-h-s0" />
+      <Handle type="source" id="s1" position={Position.Bottom} className="af-handle af-h-s1" />
     </div>
   );
 }
@@ -150,10 +161,24 @@ const nodeTypes: NodeTypes = {
 
 const FIT_OPTIONS = { padding: 0.12, maxZoom: 1.15, duration: 400 };
 
+/** 连线类型图例：可点击开关；「顺序」兜底线默认隐藏（它们是叠线的主力） */
+const LEGEND: Array<{ kind: string; label: string }> = [
+  { kind: 'read-edit', label: '读→改' },
+  { kind: 'verify', label: '验证' },
+  { kind: 'seq', label: '顺序' },
+  { kind: 'contains', label: '分组' },
+];
+
 function CanvasInner({ graph, sessionKey, selectedNodeId, onSelectNode }: CanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [hoverId, setHoverId] = useState<string | null>(null);
+  const [visibleKinds, setVisibleKinds] = useState<Record<string, boolean>>({
+    'read-edit': true,
+    verify: true,
+    seq: false,
+    contains: true,
+  });
   const prevIdsRef = useRef<ReadonlySet<string>>(new Set());
   const layoutSeqRef = useRef(0);
   const fittedSessionRef = useRef<string | null>(null);
@@ -199,10 +224,23 @@ function CanvasInner({ graph, sessionKey, selectedNodeId, onSelectNode }: Canvas
   }, [graph, sessionKey, setNodes, setEdges, fitView]);
 
   // 聚焦：悬停优先，其次选中（详情面板打开时）。聚焦点及其邻边保持醒目，其余淡出。
+  // 边处理管线：类型过滤 → 并行线错开出入锚点 → 聚焦淡出。
   const focusId = hoverId ?? selectedNodeId ?? null;
   const displayEdges = useMemo(() => {
-    if (!focusId) return edges;
-    return edges.map((e) => {
+    const outCount = new Map<string, number>();
+    const inCount = new Map<string, number>();
+    const kept: Edge[] = [];
+    for (const e of edges) {
+      const kind = (e.data as { kind?: string } | undefined)?.kind;
+      if (kind && !visibleKinds[kind]) continue;
+      const si = outCount.get(e.source) ?? 0;
+      outCount.set(e.source, si + 1);
+      const ti = inCount.get(e.target) ?? 0;
+      inCount.set(e.target, ti + 1);
+      kept.push({ ...e, sourceHandle: `s${si % 2}`, targetHandle: `t${ti % 2}` });
+    }
+    if (!focusId) return kept;
+    return kept.map((e) => {
       const on = e.source === focusId || e.target === focusId;
       const opacity = on ? 1 : 0.08;
       return {
@@ -212,7 +250,7 @@ function CanvasInner({ graph, sessionKey, selectedNodeId, onSelectNode }: Canvas
         animated: on,
       };
     });
-  }, [edges, focusId]);
+  }, [edges, focusId, visibleKinds]);
 
   const displayNodes = useMemo(() => {
     if (!focusId) return nodes;
@@ -246,6 +284,19 @@ function CanvasInner({ graph, sessionKey, selectedNodeId, onSelectNode }: Canvas
     >
       <Background gap={24} size={1.1} color={cssVar('--grid', '#1d1d20')} />
       <Controls showInteractive={false} />
+      <Panel position="top-left" className="af-edge-legend">
+        {LEGEND.map(({ kind, label }) => (
+          <button
+            key={kind}
+            type="button"
+            className={`af-legend-chip ${visibleKinds[kind] ? 'af-legend-on' : ''}`}
+            onClick={() => setVisibleKinds((v) => ({ ...v, [kind]: !v[kind] }))}
+            title={visibleKinds[kind] ? `隐藏「${label}」连线` : `显示「${label}」连线`}
+          >
+            {label}
+          </button>
+        ))}
+      </Panel>
     </ReactFlow>
   );
 }

@@ -84,8 +84,15 @@ export function cssVar(name: string, fallback: string): string {
 const EDGE_PRIORITY: Record<EdgeKind, number> = { verify: 4, 'read-edit': 3, contains: 2, seq: 1 };
 
 function toFlowEdge(from: string, to: string, kind: EdgeKind): Edge {
-  // 统一用圆角折线：分层图里比贝塞尔曲线干净得多
-  const base = { id: `e-${from}-${to}`, source: from, target: to, type: 'smoothstep' as const, pathOptions: { borderRadius: 18 } };
+  // 统一用圆角折线：分层图里比贝塞尔曲线干净得多；data.kind 供前端按类型过滤
+  const base = {
+    id: `e-${from}-${to}`,
+    source: from,
+    target: to,
+    type: 'smoothstep' as const,
+    pathOptions: { borderRadius: 18 },
+    data: { kind },
+  };
   const strong = cssVar('--edge-strong', '#b3b3bd');
   const mid = cssVar('--edge-mid', '#8f8f9a');
   const labelBg = cssVar('--bg0', '#0a0a0a');
@@ -210,9 +217,10 @@ export async function computeLayout(graph: Graph, prevIds: ReadonlySet<string>):
       'elk.algorithm': 'layered',
       'elk.direction': 'DOWN',
       'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
-      'elk.layerSpacing': '72',
-      'elk.nodeSpacing': '30',
-      'elk.spacing.edgeNode': '30',
+      'elk.layerSpacing': '84',
+      'elk.nodeSpacing': '38',
+      'elk.spacing.edgeNode': '36',
+      'elk.spacing.edgeEdge': '14',
       'elk.padding': '[top=24,left=24,bottom=24,right=24]',
     },
     children: elkChildren,

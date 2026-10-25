@@ -9,8 +9,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export type ReplaySpeed = 1 | 2 | 4;
 
-/** 每个事件的基础播放间隔（1x），速度只影响间隔 */
-const STEP_MS = 420;
+/** 每个事件的基础播放间隔（1x）——要让人来得及看清每一步的变化 */
+const STEP_MS = 1100;
 
 export interface ReplayController {
   /** 已包含的事件数（0..N），即滑杆值 */
