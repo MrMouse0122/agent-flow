@@ -2,11 +2,12 @@ import { spawn } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { demoSession, type AgentEvent } from '@agent-flow/protocol';
+import type { AgentEvent } from '@agent-flow/protocol';
 import { startServer } from '@agent-flow/server';
 import { installZcode, uninstallZcode } from '@agent-flow/adapter-zcode';
 import { startCodexWatcher } from '@agent-flow/adapter-codex';
 import { startGenericWatcher } from '@agent-flow/adapter-generic';
+import { classicScenario, skillScenario } from './demoScenarios.js';
 
 const PORT = Number(process.env.AGENT_FLOW_PORT ?? 4765);
 const URL = `http://127.0.0.1:${PORT}`;
@@ -71,6 +72,7 @@ async function cmdStart(args: string[]): Promise<void> {
 
 async function cmdDemo(args: string[]): Promise<void> {
   const speed = Number(args.find((a) => a.startsWith('--speed='))?.slice(8) || 4);
+  const scenario = args.includes('--classic') ? classicScenario : skillScenario;
   const keepServer = !(await serverOnline());
   if (keepServer) {
     await startServer({});
@@ -80,13 +82,9 @@ async function cmdDemo(args: string[]): Promise<void> {
 
   // 每次演示生成新 sessionId，避免与历史演示事件 id 撞车被去重
   const sessionId = `demo-${Date.now().toString(36)}`;
-  const events = demoSession.map((ev) => ({
-    ...ev,
-    sessionId,
-    id: ev.id.replace('demo-1', sessionId),
-  }));
+  const events = scenario.events(sessionId);
 
-  console.log(`开始推送演示会话 ${sessionId}（${events.length} 个事件，${speed}x 速度）…`);
+  console.log(`开始推送演示会话 ${sessionId}［${scenario.description}］（${events.length} 个事件，${speed}x 速度）…`);
   let prevTs = events[0]!.ts;
   for (const ev of events) {
     const gap = ev.ts - prevTs;
@@ -161,7 +159,7 @@ async function main(): Promise<void> {
 
 用法：
   agent-flow start [--no-open] [--watch <目录>]   启动守护进程（server + codex/generic 监视）并打开面板
-  agent-flow demo [--speed=4]                     推送一段模拟会话，立即看到实时出图效果
+  agent-flow demo [--speed=4] [--classic]           推送模拟会话（默认 skill 风格；--classic 为纯工具调用版）
   agent-flow install / uninstall                  注册 / 移除 ZCode hooks
   agent-flow skill [--remove]                     安装 / 移除「实时上报」skill（AI 自己叙述每一步）
   agent-flow open                                 打开面板
